@@ -1,0 +1,16 @@
+# Battery Automation Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+pandas>=2.0.0
+numpy>=1.24.0
+requests>=2.31.0
+
+# Growatt API (optional - only if using API connection)
+growattServer>=1.7.0
+
+# Modbus control (optional - only if using Modbus connection)
+pymodbus>=3.5.0
+
+# Additional utilities
+python-dateutil>=2.8.0

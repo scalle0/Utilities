@@ -1,0 +1,64 @@
+{
+  "_comment": "Battery Automation Configuration File",
+  "_comment2": "Copy this file to battery_config.json and fill in your details",
+
+  "price_fetcher": {
+    "_options": "Choose provider: entsoe, tibber, nordpool, or manual",
+    "provider": "entsoe",
+
+    "_entsoe_config": "Configuration for ENTSO-E (most European countries)",
+    "entsoe_api_key": "YOUR_ENTSOE_API_KEY_HERE",
+    "area_code": "10YNL----------L",
+    "_area_codes": "Common codes: 10YNL----------L (NL), 10YDE-VE-------2 (DE), 10YFR-RTE------C (FR), 10YES-REE------0 (ES)",
+    "currency": "EUR",
+    "timezone": "Europe/Amsterdam",
+
+    "_tibber_config": "Alternative: Configuration for Tibber",
+    "tibber_api_key": "YOUR_TIBBER_API_KEY_HERE",
+
+    "_manual_config": "Alternative: Use manual CSV file",
+    "price_file": "manual_prices.csv"
+  },
+
+  "battery": {
+    "battery_capacity_kwh": 10.0,
+    "max_charge_rate_kw": 5.0,
+    "max_discharge_rate_kw": 5.0,
+    "min_soc": 10.0,
+    "max_soc": 95.0,
+    "efficiency": 0.95,
+    "reserve_capacity_kwh": 1.0,
+    "expected_daily_consumption": 8.0,
+    "_comment": "expected_daily_consumption: Average daily consumption in kWh"
+  },
+
+  "growatt": {
+    "_options": "Choose connection_type: api or modbus",
+    "connection_type": "modbus",
+    "dry_run": true,
+    "_comment": "Set dry_run to false once you've tested the configuration",
+
+    "_api_config": "Configuration for Growatt Cloud API",
+    "username": "your_growatt_username",
+    "password": "your_growatt_password",
+    "plant_id": "your_plant_id",
+    "device_serial": "your_device_serial_number",
+
+    "_modbus_config": "Configuration for Modbus (recommended for local control)",
+    "modbus_type": "tcp",
+    "_modbus_type_options": "tcp or rtu",
+    "modbus_host": "192.168.1.100",
+    "modbus_port": 502,
+    "modbus_unit_id": 1,
+
+    "_modbus_rtu_config": "For serial/RS485 connection (if using modbus_type: rtu)",
+    "serial_port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+
+    "auto_set_modes": false,
+    "_auto_set_modes_comment": "Automatically switch battery modes during peak/off-peak hours"
+  },
+
+  "output_dir": "battery_data",
+  "_comment_output": "Directory where logs, schedules, and price data will be saved"
+}
