@@ -11,10 +11,11 @@ Intelligent battery management system that optimizes charging schedules based on
 - Automatic price fetching from multiple sources (ENTSO-E, Tibber, etc.)
 - Smart optimization to minimize electricity costs
 - Daily automation with cron scheduling
-- Supports Growatt inverters via API or Modbus
+- Multiple control options: Cloud API, Modbus, or **ESP32 (Arduino-compatible)**
+- ESP32 option: 24/7 operation for only €15-30!
 - Potential savings of €10-50+ per month
 
-**Quick Start:**
+**Quick Start (Python/PC):**
 ```bash
 pip install -r requirements.txt
 cp battery_config.example.json battery_config.json
@@ -22,13 +23,20 @@ cp battery_config.example.json battery_config.json
 ./setup_scheduler.sh
 ```
 
-**Documentation:** See [BATTERY_AUTOMATION_README.md](BATTERY_AUTOMATION_README.md)
+**Quick Start (ESP32/Arduino):**
+See [ESP32_SETUP_GUIDE.md](ESP32_SETUP_GUIDE.md) for hardware setup and Arduino sketch.
+
+**Documentation:**
+- [BATTERY_AUTOMATION_README.md](BATTERY_AUTOMATION_README.md) - Full Python system
+- [ESP32_SETUP_GUIDE.md](ESP32_SETUP_GUIDE.md) - Arduino/ESP32 implementation
 
 **Files:**
 - `battery_automation.py` - Main automation script
 - `price_fetcher.py` - Electricity price fetching
 - `battery_optimizer.py` - Optimization algorithms
-- `growatt_controller.py` - Inverter control
+- `growatt_controller.py` - Inverter control (API/Modbus/ESP32)
+- `esp32_bridge.py` - Python-to-ESP32 communication
+- `arduino/GrowattBatteryController/` - ESP32 Arduino sketch
 
 ---
 

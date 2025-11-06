@@ -33,7 +33,7 @@
   },
 
   "growatt": {
-    "_options": "Choose connection_type: api or modbus",
+    "_options": "Choose connection_type: api, modbus, or esp32",
     "connection_type": "modbus",
     "dry_run": true,
     "_comment": "Set dry_run to false once you've tested the configuration",
@@ -54,6 +54,10 @@
     "_modbus_rtu_config": "For serial/RS485 connection (if using modbus_type: rtu)",
     "serial_port": "/dev/ttyUSB0",
     "baudrate": 9600,
+
+    "_esp32_config": "Configuration for ESP32 controller (low-cost 24/7 solution)",
+    "esp32_ip": "192.168.1.50",
+    "esp32_port": 80,
 
     "auto_set_modes": false,
     "_auto_set_modes_comment": "Automatically switch battery modes during peak/off-peak hours"

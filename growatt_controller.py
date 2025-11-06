@@ -404,6 +404,114 @@ class GrowattModbusController(GrowattController):
             return False
 
 
+class GrowattESP32Controller(GrowattController):
+    """
+    Controls Growatt via ESP32 bridge (HTTP API)
+    The ESP32 handles Modbus communication locally
+    """
+
+    def __init__(self, config: Dict):
+        super().__init__(config)
+
+        if not self.dry_run:
+            try:
+                from esp32_bridge import ESP32Bridge
+                self.bridge = ESP32Bridge(config)
+                self.test_connection()
+            except ImportError:
+                logger.error("esp32_bridge module not found")
+                raise
+        else:
+            logger.info("DRY RUN MODE: No actual ESP32 calls will be made")
+            self.bridge = None
+
+    def test_connection(self):
+        """Test connection to ESP32"""
+        if self.bridge:
+            return self.bridge.test_connection()
+        return True
+
+    def get_battery_status(self) -> Dict:
+        """Get battery status via ESP32"""
+        if self.dry_run:
+            logger.info("[DRY RUN] Would get battery status from ESP32")
+            return {
+                'soc': 50,
+                'power': 0,
+                'voltage': 52.0,
+                'status': 'standby'
+            }
+
+        try:
+            status = self.bridge.get_battery_status()
+            return {
+                'soc': status.get('soc', 0),
+                'power': status.get('power', 0),
+                'voltage': status.get('voltage', 0),
+                'current': status.get('current', 0),
+                'status': 'charging' if status.get('is_charging') else 'discharging'
+            }
+        except Exception as e:
+            logger.error(f"Error getting battery status from ESP32: {e}")
+            return {}
+
+    def set_charging_schedule(self, time_slots: List[Dict]) -> bool:
+        """Send charging schedule to ESP32"""
+        if self.dry_run:
+            logger.info("[DRY RUN] Would send charging schedule to ESP32:")
+            for slot in time_slots:
+                logger.info(f"  Slot {slot['slot_number']}: "
+                           f"{slot['start_hour']:02d}:{slot['start_minute']:02d} - "
+                           f"{slot['end_hour']:02d}:{slot['end_minute']:02d}")
+            return True
+
+        try:
+            # Convert time slots to schedule format
+            from datetime import datetime, timedelta
+            tomorrow = datetime.now() + timedelta(days=1)
+
+            charging_windows = []
+            for slot in time_slots:
+                if slot['enabled']:
+                    start = tomorrow.replace(
+                        hour=slot['start_hour'],
+                        minute=slot['start_minute'],
+                        second=0,
+                        microsecond=0
+                    )
+                    end = tomorrow.replace(
+                        hour=slot['end_hour'],
+                        minute=slot['end_minute'],
+                        second=0,
+                        microsecond=0
+                    )
+                    charging_windows.append({
+                        'start': start,
+                        'end': end,
+                        'energy_kwh': slot.get('energy_kwh', 0)
+                    })
+
+            schedule = {'charging_windows': charging_windows}
+            return self.bridge.send_schedule(schedule)
+
+        except Exception as e:
+            logger.error(f"Error sending schedule to ESP32: {e}")
+            return False
+
+    def set_battery_mode(self, mode: str) -> bool:
+        """
+        Set battery mode
+        Note: This is typically handled by the charging schedule
+        """
+        if self.dry_run:
+            logger.info(f"[DRY RUN] Would set battery mode to: {mode}")
+            return True
+
+        logger.info(f"Battery mode setting via ESP32: {mode}")
+        logger.info("Note: Mode is controlled by charging schedule on Growatt")
+        return True
+
+
 def get_controller(config: Dict) -> GrowattController:
     """
     Factory function to get the appropriate Growatt controller
@@ -418,7 +526,8 @@ def get_controller(config: Dict) -> GrowattController:
 
     controllers = {
         'api': GrowattAPIController,
-        'modbus': GrowattModbusController
+        'modbus': GrowattModbusController,
+        'esp32': GrowattESP32Controller
     }
 
     if connection_type not in controllers:
