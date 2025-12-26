@@ -18,12 +18,16 @@ bool heaterStatus;               // Current heater status (READ-ONLY on dashboar
 bool manualHeaterControl;        // Manual heater control (when automation disabled)
 float tempThresholdLow;          // Lower temperature threshold - heater turns ON below this (18-25°C)
 float tempThresholdHigh;         // Upper temperature threshold - heater turns OFF above this (18-25°C)
+bool ledMatrixEnabled;           // Toggle LED matrix display ON/OFF
+bool ledStripEnabled;            // Toggle external LED strip ON/OFF
 
 // Variable callback functions
 void onAutoControlEnabledChange();
 void onManualHeaterControlChange();
 void onTempThresholdLowChange();
 void onTempThresholdHighChange();
+void onLedMatrixEnabledChange();
+void onLedStripEnabledChange();
 
 // WiFi connection
 WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
@@ -40,4 +44,6 @@ void initProperties() {
   ArduinoCloud.addProperty(manualHeaterControl, READWRITE, ON_CHANGE, onManualHeaterControlChange);
   ArduinoCloud.addProperty(tempThresholdLow, READWRITE, ON_CHANGE, onTempThresholdLowChange);
   ArduinoCloud.addProperty(tempThresholdHigh, READWRITE, ON_CHANGE, onTempThresholdHighChange);
+  ArduinoCloud.addProperty(ledMatrixEnabled, READWRITE, ON_CHANGE, onLedMatrixEnabledChange);
+  ArduinoCloud.addProperty(ledStripEnabled, READWRITE, ON_CHANGE, onLedStripEnabledChange);
 }

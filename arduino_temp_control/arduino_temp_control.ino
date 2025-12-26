@@ -21,14 +21,20 @@
   - IoT Cloud dashboard control to enable/disable automation
   - Manual override with Modulino button
   - Adjustable temperature thresholds from dashboard
+  - LED Matrix display showing temperature
+  - Optional: WS2812B LED strip control
 */
 
 #include "thingProperties.h"
 #include <Modulino.h>
+#include "Arduino_LED_Matrix.h"
 
 // Modulino objects
 ModulinoThermo thermo;
 ModulinoButtons buttons;
+
+// LED Matrix object
+ArduinoLEDMatrix matrix;
 
 // Temperature thresholds are now cloud variables (defined in thingProperties.h)
 // tempThresholdLow: Turn heater ON when temp drops below this
@@ -38,15 +44,25 @@ ModulinoButtons buttons;
 // Timing variables
 unsigned long lastTempRead = 0;
 const unsigned long TEMP_READ_INTERVAL = 5000;  // Read temp every 5 seconds
+unsigned long lastMatrixUpdate = 0;
+const unsigned long MATRIX_UPDATE_INTERVAL = 100;  // Update matrix animation every 100ms
 
 // Button state tracking
 bool lastButtonState = false;
+
+// LED Matrix scrolling variables
+int scrollPosition = 0;
+String displayText = "";
 
 void setup() {
   Serial.begin(9600);
   delay(1500);
 
   Serial.println("Arduino R4 WiFi Temperature Control Starting...");
+
+  // Initialize LED Matrix
+  matrix.begin();
+  Serial.println("LED Matrix initialized");
 
   // Initialize Modulino communication
   Modulino.begin();
@@ -70,6 +86,8 @@ void setup() {
   currentTemperature = 0.0;
   tempThresholdLow = 23.0;     // Default: Turn ON below 23°C
   tempThresholdHigh = 24.0;    // Default: Turn OFF above 24°C
+  ledMatrixEnabled = true;     // LED Matrix starts ON
+  ledStripEnabled = false;     // LED Strip starts OFF
 
   Serial.println("Setup complete!");
   Serial.print("Temperature thresholds: ");
@@ -77,6 +95,10 @@ void setup() {
   Serial.print("°C - ");
   Serial.print(tempThresholdHigh);
   Serial.println("°C");
+
+  // Show welcome message on LED matrix
+  displayText = "TEMP CONTROL READY  ";
+  scrollPosition = 0;
 }
 
 void loop() {
@@ -87,6 +109,20 @@ void loop() {
   if (millis() - lastTempRead >= TEMP_READ_INTERVAL) {
     readTemperature();
     lastTempRead = millis();
+
+    // Update display text with current temperature
+    displayText = String(currentTemperature, 1) + "C  ";
+    if (heaterStatus) {
+      displayText += "HEAT:ON  ";
+    } else {
+      displayText += "HEAT:OFF  ";
+    }
+  }
+
+  // Update LED Matrix display
+  if (millis() - lastMatrixUpdate >= MATRIX_UPDATE_INTERVAL) {
+    updateLEDMatrix();
+    lastMatrixUpdate = millis();
   }
 
   // Check button for manual override
@@ -97,7 +133,7 @@ void loop() {
     controlHeater();
   }
 
-  delay(100);
+  delay(10);
 }
 
 void readTemperature() {
@@ -233,4 +269,59 @@ void onTempThresholdHighChange() {
   Serial.print("Upper temperature threshold set to: ");
   Serial.print(tempThresholdHigh);
   Serial.println("°C");
+}
+
+void updateLEDMatrix() {
+  if (!ledMatrixEnabled) {
+    // Turn off LED matrix
+    matrix.clear();
+    return;
+  }
+
+  // Scroll the text across the LED matrix
+  matrix.beginDraw();
+  matrix.stroke(0xFFFFFFFF);  // White color
+  matrix.textScrollSpeed(50);
+  
+  // Create scrolling text
+  const char* text = displayText.c_str();
+  matrix.textFont(Font_5x7);
+  matrix.beginText(12 - scrollPosition, 1, 0xFFFFFF);
+  matrix.println(text);
+  matrix.endText(SCROLL_LEFT);
+  
+  matrix.endDraw();
+  
+  // Update scroll position
+  scrollPosition++;
+  if (scrollPosition > (int)(displayText.length() * 6)) {
+    scrollPosition = 0;  // Reset scroll
+  }
+}
+
+void onLedMatrixEnabledChange() {
+  Serial.print("LED Matrix ");
+  Serial.println(ledMatrixEnabled ? "ENABLED" : "DISABLED");
+  
+  if (!ledMatrixEnabled) {
+    matrix.clear();
+  } else {
+    // Reset scroll when re-enabled
+    scrollPosition = 0;
+  }
+}
+
+void onLedStripEnabledChange() {
+  Serial.print("LED Strip ");
+  Serial.println(ledStripEnabled ? "ENABLED" : "DISABLED");
+  
+  // Note: LED strip control would go here
+  // For WS2812B strips, you would use a library like FastLED or Adafruit_NeoPixel
+  // Example setup would be:
+  // if (ledStripEnabled) {
+  //   // Turn on LED strip - set to color based on temperature
+  //   // Cool = Blue, Warm = Red
+  // } else {
+  //   // Turn off LED strip
+  // }
 }

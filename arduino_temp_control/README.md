@@ -12,6 +12,8 @@ Automated temperature control system using Arduino R4 WiFi with Modulino sensors
 - **IoT Cloud Dashboard**: Control and monitor from anywhere
 - **Google Home Integration**: Voice control and automation via Arduino Cloud triggers
 - **Manual Override**: Use Modulino button or dashboard to disable automation
+- **LED Matrix Display** ✨: Built-in 12x8 RGB matrix shows scrolling temperature and heater status
+- **Optional LED Strip Control**: Add WS2812B LED strip for visual temperature indication (see [LED_FEATURES.md](LED_FEATURES.md))
 
 ## Hardware Requirements
 
