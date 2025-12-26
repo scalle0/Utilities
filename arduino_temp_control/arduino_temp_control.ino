@@ -17,9 +17,10 @@
 
   Features:
   - Temperature monitoring
-  - Automatic heater control (below 23°C ON, above 24°C OFF)
+  - Automatic heater control with adjustable thresholds (18-25°C)
   - IoT Cloud dashboard control to enable/disable automation
   - Manual override with Modulino button
+  - Adjustable temperature thresholds from dashboard
 */
 
 #include "thingProperties.h"
@@ -29,9 +30,10 @@
 ModulinoThermo thermo;
 ModulinoButtons buttons;
 
-// Temperature thresholds
-const float TEMP_THRESHOLD_LOW = 23.0;   // Turn heater ON below this
-const float TEMP_THRESHOLD_HIGH = 24.0;  // Turn heater OFF above this
+// Temperature thresholds are now cloud variables (defined in thingProperties.h)
+// tempThresholdLow: Turn heater ON when temp drops below this
+// tempThresholdHigh: Turn heater OFF when temp rises above this
+// Range: 18.0 to 25.0°C
 
 // Timing variables
 unsigned long lastTempRead = 0;
@@ -66,8 +68,15 @@ void setup() {
   autoControlEnabled = true;   // Start with automation enabled
   heaterStatus = false;        // Heater starts OFF
   currentTemperature = 0.0;
+  tempThresholdLow = 23.0;     // Default: Turn ON below 23°C
+  tempThresholdHigh = 24.0;    // Default: Turn OFF above 24°C
 
   Serial.println("Setup complete!");
+  Serial.print("Temperature thresholds: ");
+  Serial.print(tempThresholdLow);
+  Serial.print("°C - ");
+  Serial.print(tempThresholdHigh);
+  Serial.println("°C");
 }
 
 void loop() {
@@ -110,23 +119,27 @@ void controlHeater() {
   bool shouldBeOn = false;
 
   // Hysteresis control to prevent rapid switching
-  if (currentTemperature < TEMP_THRESHOLD_LOW && !heaterState) {
+  if (currentTemperature < tempThresholdLow && !heaterState) {
     // Temperature too low, turn heater ON
     shouldBeOn = true;
     heaterState = true;
     heaterStatus = true;
-    Serial.println("Temperature below threshold - Heater should be ON");
+    Serial.print("Temperature below ");
+    Serial.print(tempThresholdLow);
+    Serial.println("°C - Heater should be ON");
   }
-  else if (currentTemperature > TEMP_THRESHOLD_HIGH && heaterState) {
+  else if (currentTemperature > tempThresholdHigh && heaterState) {
     // Temperature high enough, turn heater OFF
     shouldBeOn = false;
     heaterState = false;
     heaterStatus = false;
-    Serial.println("Temperature above threshold - Heater should be OFF");
+    Serial.print("Temperature above ");
+    Serial.print(tempThresholdHigh);
+    Serial.println("°C - Heater should be OFF");
   }
 
   // Note: Actual Google Home control happens via IoT Cloud trigger
-  // The heaterStatus variable will be monitored by IFTTT or Arduino IoT Cloud triggers
+  // The heaterStatus variable will be monitored by Arduino IoT Cloud triggers
 }
 
 void checkButton() {
@@ -168,4 +181,56 @@ void onManualHeaterControlChange() {
     Serial.print("Manual heater control: ");
     Serial.println(heaterStatus ? "ON" : "OFF");
   }
+}
+
+void onTempThresholdLowChange() {
+  // Validate and constrain lower threshold
+  // Range: 18.0 to 25.0°C
+  // Must be less than upper threshold
+
+  if (tempThresholdLow < 18.0) {
+    tempThresholdLow = 18.0;
+    Serial.println("Warning: Lower threshold set to minimum (18.0°C)");
+  }
+  else if (tempThresholdLow > 25.0) {
+    tempThresholdLow = 25.0;
+    Serial.println("Warning: Lower threshold set to maximum (25.0°C)");
+  }
+
+  // Ensure hysteresis: low must be less than high
+  if (tempThresholdLow >= tempThresholdHigh) {
+    tempThresholdLow = tempThresholdHigh - 0.5;
+    Serial.print("Warning: Lower threshold adjusted to maintain hysteresis: ");
+    Serial.println(tempThresholdLow);
+  }
+
+  Serial.print("Lower temperature threshold set to: ");
+  Serial.print(tempThresholdLow);
+  Serial.println("°C");
+}
+
+void onTempThresholdHighChange() {
+  // Validate and constrain upper threshold
+  // Range: 18.0 to 25.0°C
+  // Must be greater than lower threshold
+
+  if (tempThresholdHigh < 18.0) {
+    tempThresholdHigh = 18.0;
+    Serial.println("Warning: Upper threshold set to minimum (18.0°C)");
+  }
+  else if (tempThresholdHigh > 25.0) {
+    tempThresholdHigh = 25.0;
+    Serial.println("Warning: Upper threshold set to maximum (25.0°C)");
+  }
+
+  // Ensure hysteresis: high must be greater than low
+  if (tempThresholdHigh <= tempThresholdLow) {
+    tempThresholdHigh = tempThresholdLow + 0.5;
+    Serial.print("Warning: Upper threshold adjusted to maintain hysteresis: ");
+    Serial.println(tempThresholdHigh);
+  }
+
+  Serial.print("Upper temperature threshold set to: ");
+  Serial.print(tempThresholdHigh);
+  Serial.println("°C");
 }

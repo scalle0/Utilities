@@ -16,10 +16,14 @@ float currentTemperature;        // Current temperature reading (READ-ONLY on da
 bool autoControlEnabled;         // Toggle to enable/disable automatic control
 bool heaterStatus;               // Current heater status (READ-ONLY on dashboard)
 bool manualHeaterControl;        // Manual heater control (when automation disabled)
+float tempThresholdLow;          // Lower temperature threshold - heater turns ON below this (18-25°C)
+float tempThresholdHigh;         // Upper temperature threshold - heater turns OFF above this (18-25°C)
 
 // Variable callback functions
 void onAutoControlEnabledChange();
 void onManualHeaterControlChange();
+void onTempThresholdLowChange();
+void onTempThresholdHighChange();
 
 // WiFi connection
 WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
@@ -34,4 +38,6 @@ void initProperties() {
   ArduinoCloud.addProperty(autoControlEnabled, READWRITE, ON_CHANGE, onAutoControlEnabledChange);
   ArduinoCloud.addProperty(heaterStatus, READ, ON_CHANGE, NULL);
   ArduinoCloud.addProperty(manualHeaterControl, READWRITE, ON_CHANGE, onManualHeaterControlChange);
+  ArduinoCloud.addProperty(tempThresholdLow, READWRITE, ON_CHANGE, onTempThresholdLowChange);
+  ArduinoCloud.addProperty(tempThresholdHigh, READWRITE, ON_CHANGE, onTempThresholdHighChange);
 }

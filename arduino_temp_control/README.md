@@ -5,11 +5,12 @@ Automated temperature control system using Arduino R4 WiFi with Modulino sensors
 ## Features
 
 - **Real-time Temperature Monitoring**: Uses Modulino Thermo sensor
+- **Adjustable Temperature Thresholds**: Set your preferred temperature range (18-25°C) from the dashboard
 - **Automatic Heater Control**:
-  - Turns ON heater when temperature drops below 23°C
-  - Turns OFF heater when temperature rises above 24°C
+  - Turns ON heater when temperature drops below your lower threshold (default 23°C)
+  - Turns OFF heater when temperature rises above your upper threshold (default 24°C)
 - **IoT Cloud Dashboard**: Control and monitor from anywhere
-- **Google Home Integration**: Voice control and automation
+- **Google Home Integration**: Voice control and automation via Arduino Cloud triggers
 - **Manual Override**: Use Modulino button or dashboard to disable automation
 
 ## Hardware Requirements
@@ -43,6 +44,8 @@ Automated temperature control system using Arduino R4 WiFi with Modulino sensors
 | `autoControlEnabled` | boolean | Read & Write | Enable/disable automatic control |
 | `heaterStatus` | boolean | Read Only | Current heater status |
 | `manualHeaterControl` | boolean | Read & Write | Manual heater control |
+| `tempThresholdLow` | float | Read & Write | Lower temperature threshold (18-25°C) |
+| `tempThresholdHigh` | float | Read & Write | Upper temperature threshold (18-25°C) |
 
 5. Configure your WiFi credentials in the Network section
 6. Download your device credentials (Device ID and Secret Key)
@@ -83,6 +86,8 @@ In Arduino IDE:
    - **Switch**: Link to `autoControlEnabled` (toggle automation on/off)
    - **LED**: Link to `heaterStatus` (shows heater state)
    - **Switch**: Link to `manualHeaterControl` (manual heater control)
+   - **Slider** or **Value**: Link to `tempThresholdLow` (set lower temp, range 18-25, step 0.1)
+   - **Slider** or **Value**: Link to `tempThresholdHigh` (set upper temp, range 18-25, step 0.1)
 
 ### 6. Google Home Integration (Arduino Cloud Automations)
 

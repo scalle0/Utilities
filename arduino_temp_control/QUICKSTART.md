@@ -29,11 +29,13 @@ Get your Arduino temperature control system running in 30 minutes!
 1. Go to [create.arduino.cc/iot](https://create.arduino.cc/iot)
 2. Create new Thing
 3. Add your Arduino R4 WiFi device
-4. Add 4 Cloud Variables:
+4. Add 6 Cloud Variables:
    - `currentTemperature` (float, READ)
    - `autoControlEnabled` (boolean, READ/WRITE)
    - `heaterStatus` (boolean, READ)
    - `manualHeaterControl` (boolean, READ/WRITE)
+   - `tempThresholdLow` (float, READ/WRITE)
+   - `tempThresholdHigh` (float, READ/WRITE)
 5. Set WiFi credentials
 6. Download device credentials
 
@@ -65,6 +67,8 @@ Get your Arduino temperature control system running in 30 minutes!
    - **Switch**: `autoControlEnabled`
    - **LED**: `heaterStatus`
    - **Switch**: `manualHeaterControl`
+   - **Slider**: `tempThresholdLow` (min: 18, max: 25, step: 0.1)
+   - **Slider**: `tempThresholdHigh` (min: 18, max: 25, step: 0.1)
 3. Save dashboard
 
 ### Step 5: Connect Google Home (5 minutes)
@@ -119,10 +123,17 @@ Get your Arduino temperature control system running in 30 minutes!
 
 ### Change Temperature Thresholds
 
-Edit in `arduino_temp_control.ino`:
+**Easy way (from dashboard):**
+- Use the sliders for `tempThresholdLow` and `tempThresholdHigh`
+- Range: 18.0 to 25.0°C
+- Precision: 0.1°C (one decimal place)
+- Changes apply immediately!
+
+**Alternative (edit code):**
+- Edit default values in `arduino_temp_control.ino` setup():
 ```cpp
-const float TEMP_THRESHOLD_LOW = 23.0;   // Your preferred lower temp
-const float TEMP_THRESHOLD_HIGH = 24.0;  // Your preferred upper temp
+tempThresholdLow = 23.0;     // Your preferred lower temp
+tempThresholdHigh = 24.0;    // Your preferred upper temp
 ```
 
 ### Change Update Frequency
