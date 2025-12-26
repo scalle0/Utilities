@@ -69,16 +69,20 @@ Get your Arduino temperature control system running in 30 minutes!
 
 ### Step 5: Connect Google Home (5 minutes)
 
-1. Add smart plug to Google Home app
-2. Go to [IFTTT.com](https://ifttt.com)
-3. Create applet:
-   - IF: Arduino IoT Cloud → `heaterStatus` = `true`
-   - THEN: Google Assistant → Turn ON "Heater"
-4. Create second applet:
-   - IF: Arduino IoT Cloud → `heaterStatus` = `false`
-   - THEN: Google Assistant → Turn OFF "Heater"
+1. **Add smart plug to Google Home app** and name it "Heater"
+2. **Link Google Home to Arduino Cloud**:
+   - Arduino IoT Cloud → Integrations → Add Google Home
+   - Authorize and sync devices
+3. **Create trigger for ON**:
+   - Arduino IoT Cloud → Triggers → Create
+   - When: `heaterStatus` = `true`
+   - Then: Turn ON "Heater"
+4. **Create trigger for OFF**:
+   - Create another trigger
+   - When: `heaterStatus` = `false`
+   - Then: Turn OFF "Heater"
 
-**See GOOGLE_HOME_SETUP.md for detailed instructions**
+**Fast and free! No IFTTT needed. See GOOGLE_HOME_SETUP.md for detailed instructions**
 
 ## Test Your System
 
@@ -86,7 +90,7 @@ Get your Arduino temperature control system running in 30 minutes!
 1. Open IoT Cloud dashboard
 2. Toggle `autoControlEnabled` to OFF
 3. Toggle `manualHeaterControl` to ON
-4. Verify heater turns on (wait up to 1 minute for IFTTT free tier)
+4. Heater should turn on within 1-2 seconds!
 
 ### Test 2: Automatic Control
 1. Toggle `autoControlEnabled` to ON
@@ -135,7 +139,7 @@ const unsigned long TEMP_READ_INTERVAL = 5000;  // milliseconds
 | WiFi won't connect | Check SSID/password, ensure 2.4GHz network |
 | Temperature shows NaN | Check Modulino connections, power cycle |
 | Cloud won't connect | Verify device credentials, check internet |
-| Google Home delayed | IFTTT free tier has delays; upgrade to Pro |
+| Google Home not responding | Check Integration is linked, verify triggers enabled |
 | Button not working | Check Modulino Buttons connection |
 
 ## File Reference

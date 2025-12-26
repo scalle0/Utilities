@@ -23,7 +23,6 @@ Automated temperature control system using Arduino R4 WiFi with Modulino sensors
 
 - Arduino IDE 2.0 or later
 - Arduino IoT Cloud account (free tier available)
-- IFTTT account (for Google Home integration)
 - Libraries:
   - ArduinoIoTCloud
   - Arduino_ConnectionHandler
@@ -85,24 +84,26 @@ In Arduino IDE:
    - **LED**: Link to `heaterStatus` (shows heater state)
    - **Switch**: Link to `manualHeaterControl` (manual heater control)
 
-### 6. Google Home Integration (IFTTT Method)
+### 6. Google Home Integration (Arduino Cloud Automations)
 
-#### Option A: Using IFTTT
+**Recommended Method: Arduino IoT Cloud Triggers**
 
-1. Create an IFTTT account at [ifttt.com](https://ifttt.com)
-2. Create an Applet with:
-   - **IF**: Arduino IoT Cloud → `heaterStatus` becomes `true`
-   - **THEN**: Google Assistant → Control smart plug → Turn ON
-3. Create another Applet:
-   - **IF**: Arduino IoT Cloud → `heaterStatus` becomes `false`
-   - **THEN**: Google Assistant → Control smart plug → Turn OFF
+1. **Add smart plug to Google Home app** and name it "Heater"
+2. **Link Google Home to Arduino Cloud**:
+   - Arduino IoT Cloud → **Integrations** → Add **Google Home**
+   - Authorize and sync your devices
+3. **Create automation for ON**:
+   - Arduino IoT Cloud → **Triggers** → Create Trigger
+   - When: `heaterStatus` equals `true`
+   - Then: Turn ON "Heater" (Google Home device)
+4. **Create automation for OFF**:
+   - Create another trigger
+   - When: `heaterStatus` equals `false`
+   - Then: Turn OFF "Heater" (Google Home device)
 
-#### Option B: Using Arduino IoT Cloud Webhooks
+**Response time**: 1-2 seconds, completely free!
 
-1. In Arduino IoT Cloud, go to **Integrations**
-2. Create webhook triggers:
-   - When `heaterStatus` = true → Call Google Home API to turn on plug
-   - When `heaterStatus` = false → Call Google Home API to turn off plug
+See **GOOGLE_HOME_SETUP.md** for detailed step-by-step instructions.
 
 ## Usage
 
