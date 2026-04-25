@@ -1,0 +1,144 @@
+{
+  "displayName": "Psycho Aanmeldingen",
+  "description": "Lijst voor het opvolgen van psychologische aanmeldingen (PrEP/Hiv).",
+  "templates": [
+    {
+      "displayName": "Psycho Aanmeldingen",
+      "description": "Tracking van aanmeldingen, hulpvragen en na-acties.",
+      "columns": [
+        {
+          "name": "Naam",
+          "displayName": "Naam",
+          "description": "Naam van de patiënt",
+          "type": "text",
+          "isRequired": true
+        },
+        {
+          "name": "Adrema",
+          "displayName": "Adrema",
+          "description": "Adrema-nummer",
+          "type": "text",
+          "isRequired": false
+        },
+        {
+          "name": "Aanvrager",
+          "displayName": "Aanvrager",
+          "description": "Persoon die de aanvraag doet",
+          "type": "text",
+          "isRequired": false
+        },
+        {
+          "name": "InOpvolgingVoor",
+          "displayName": "In opvolging voor",
+          "description": "PrEP of Hiv",
+          "type": "choice",
+          "choices": ["PrEP", "Hiv"],
+          "isRequired": false
+        },
+        {
+          "name": "SoortAanmelding",
+          "displayName": "Soort aanmelding",
+          "description": "Type aanmelding",
+          "type": "choice",
+          "choices": [
+            "Nieuwe aanmelding",
+            "Gekende patiënt in psycho opvolging"
+          ],
+          "isRequired": false
+        },
+        {
+          "name": "FormuleerHulpvraag",
+          "displayName": "Formuleer hulpvraag",
+          "description": "Beschrijving van de hulpvraag",
+          "type": "note",
+          "isRequired": false
+        },
+        {
+          "name": "NaActie",
+          "displayName": "Na-actie",
+          "description": "Opvolgingsactie",
+          "type": "choice",
+          "choices": [
+            "Inboeken agenda Charlotte",
+            "Inboeken agenda Lien",
+            "Extern doorverwezen",
+            "Wachtlijst",
+            "TC (telefonisch contact)"
+          ],
+          "isRequired": false
+        },
+        {
+          "name": "StatusNaActie",
+          "displayName": "Status na-actie",
+          "description": "Status van de na-actie (met kleurcodes)",
+          "type": "choice",
+          "choices": [
+            "Pending",
+            "Patiënt gecontacteerd - wacht op respons",
+            "Afgehandeld"
+          ],
+          "columnFormatting": {
+            "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+            "elmType": "div",
+            "style": {
+              "padding": "4px 8px",
+              "border-radius": "16px",
+              "display": "inline-block",
+              "font-size": "13px",
+              "font-weight": "600"
+            },
+            "attributes": {
+              "class": {
+                "operator": ":",
+                "operands": [
+                  {
+                    "operator": "==",
+                    "operands": ["@currentField", "Pending"]
+                  },
+                  "sp-css-backgroundColor-warning sp-field-fontSizeSmall",
+                  {
+                    "operator": ":",
+                    "operands": [
+                      {
+                        "operator": "==",
+                        "operands": [
+                          "@currentField",
+                          "Patiënt gecontacteerd - wacht op respons"
+                        ]
+                      },
+                      "sp-css-backgroundColor-blockingBackground50 sp-field-fontSizeSmall",
+                      "sp-css-backgroundColor-success sp-field-fontSizeSmall"
+                    ]
+                  }
+                ]
+              }
+            },
+            "txtContent": "@currentField"
+          },
+          "isRequired": false
+        },
+        {
+          "name": "DatumAfhandeling",
+          "displayName": "Datum van afhandeling",
+          "description": "Datum waarop de na-actie werd afgehandeld",
+          "type": "dateTime",
+          "isRequired": false
+        },
+        {
+          "name": "InfoDoorverwijzing",
+          "displayName": "Info doorverwijzing",
+          "description": "Details over de externe doorverwijzing (waarheen, contactpersoon, etc.)",
+          "type": "note",
+          "isRequired": false
+        },
+        {
+          "name": "DatumDoorverwijzing",
+          "displayName": "Datum doorverwijzing",
+          "description": "Datum van de externe doorverwijzing",
+          "type": "dateTime",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}
