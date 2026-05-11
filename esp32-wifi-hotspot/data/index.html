@@ -34,6 +34,15 @@
       font-size: .95em;
     }
     .muted { color: #9aa; font-size: .85em; margin-top: 2em; }
+    .counter {
+      margin-top: 1.5em;
+      padding: .8em 1em;
+      background: #1a1a2e;
+      border-left: 4px solid #e94560;
+      border-radius: 4px;
+      font-size: 1.05em;
+    }
+    .counter strong { color: #e94560; font-size: 1.4em; }
   </style>
 </head>
 <body>
@@ -55,6 +64,10 @@
       100 lines of code, and a USB battery in someone's backpack.
     </p>
 
+    <p class="counter">
+      People who've been gotcha'd by this box: <strong id="count">&hellip;</strong>
+    </p>
+
     <h2>How to stay safer on public WiFi</h2>
     <ul>
       <li>Don't auto-join networks named &ldquo;Free WiFi,&rdquo; &ldquo;Airport,&rdquo; &ldquo;Guest&rdquo;</li>
@@ -69,5 +82,17 @@
       Stay curious, stay paranoid. &mdash; ScAIdev
     </p>
   </div>
+
+  <script>
+    async function refresh() {
+      try {
+        const r = await fetch('/status', { cache: 'no-store' });
+        const j = await r.json();
+        document.getElementById('count').textContent = j.total_visitors;
+      } catch (e) { /* offline, ignore */ }
+    }
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
 </body>
 </html>
