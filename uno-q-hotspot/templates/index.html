@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gotcha!</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: #eee;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5em;
+    }
+    .card {
+      max-width: 640px;
+      background: #0f3460;
+      padding: 2em;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    }
+    h1 { margin: 0 0 .2em; font-size: 2.2em; color: #e94560; }
+    h2 { color: #f5b14f; margin-top: 1.4em; }
+    code { background:#1a1a2e; padding:.1em .4em; border-radius:4px; font-size:.95em; }
+    .leak {
+      margin-top: 1.5em;
+      padding: 1em 1.2em;
+      background:#1a1a2e;
+      border-left: 4px solid #e94560;
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: .85em;
+      line-height: 1.7;
+      word-break: break-all;
+    }
+    .leak .k { color: #f5b14f; }
+    .counter {
+      margin-top: 1.5em; padding:.8em 1em;
+      background:#1a1a2e; border-left:4px solid #e94560; border-radius:4px;
+      font-size:1.05em;
+    }
+    .counter strong { color:#e94560; font-size:1.4em; }
+    .muted { color:#9aa; font-size:.85em; margin-top:2em; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Gotcha.</h1>
+    <p>
+      You joined an open WiFi network called <strong>ScAIdev</strong> that
+      you've never seen before. You didn't sign in. You didn't agree to anything.
+      And yet this box already knows quite a lot about you.
+    </p>
+
+    <h2>What this network just learned about you</h2>
+    <div class="leak">
+      <div><span class="k">IP assigned:</span> {{ info.ip }}</div>
+      <div><span class="k">MAC address:</span> {{ info.mac or '(not visible)' }}</div>
+      <div><span class="k">Device vendor:</span> {{ info.vendor }}</div>
+      <div><span class="k">Browser / OS:</span> {{ info.user_agent }}</div>
+      <div><span class="k">Languages:</span> {{ info.language }}</div>
+      {% if info.platform %}<div><span class="k">Platform hint:</span> {{ info.platform }}</div>{% endif %}
+      <div><span class="k">Time:</span> {{ info.timestamp }}</div>
+    </div>
+
+    <p>
+      That's just from your phone joining and asking for a single page.
+      A real attacker on a real public network sees this for every device
+      that connects, every minute, all day. They can correlate your MAC
+      across visits, infer your habits from your browser fingerprint, and
+      tie it to which apps "phone home" the moment your phone joins.
+    </p>
+
+    <p class="counter">
+      Visitors caught by this box: <strong>{{ total }}</strong>
+    </p>
+
+    <h2>What an attacker could do beyond looking</h2>
+    <ul>
+      <li>Serve fake login pages for your bank or email</li>
+      <li>Strip HTTPS on plaintext-fallback sites</li>
+      <li>Inject malware into pages your browser loads over HTTP</li>
+      <li>Watch DNS queries to know which sites you visit, even with TLS</li>
+    </ul>
+
+    <h2>How to stay safer</h2>
+    <ul>
+      <li>Don't auto-join networks named &ldquo;Free WiFi,&rdquo; &ldquo;Guest,&rdquo; or an airport name</li>
+      <li>Turn off auto-connect to open networks</li>
+      <li>Use a VPN on networks you don't trust</li>
+      <li>Tether off your phone's mobile data when in doubt</li>
+      <li>Disable WiFi entirely when you don't need it &mdash; phones probe constantly</li>
+    </ul>
+
+    <p class="muted">
+      No credentials were collected. Logs are local to this device and will be
+      wiped after the demo. Stay curious, stay paranoid. &mdash; ScAIdev
+    </p>
+  </div>
+</body>
+</html>
