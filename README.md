@@ -4,5 +4,5 @@ try to get growatt
 
 ## Projects
 
-- [esp32-wifi-hotspot](esp32-wifi-hotspot/) — turns an ESP32 into an open WiFi access point with a status landing page.
+- [esp32-wifi-hotspot](esp32-wifi-hotspot/) — ESP32 open AP + captive portal demo for teaching public-WiFi awareness.
 
