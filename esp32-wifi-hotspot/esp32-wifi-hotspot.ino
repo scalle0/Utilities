@@ -50,7 +50,12 @@ static void handleCaptive() {
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  // Arduino Nano ESP32 uses native USB CDC: wait briefly for the host to
+  // enumerate so the boot log isn't lost on first Serial Monitor open.
+  unsigned long t0 = millis();
+  while (!Serial && millis() - t0 < 2000) {
+    delay(10);
+  }
 
   if (!LittleFS.begin(false)) {
     Serial.println("LittleFS mount failed. Did you upload the data/ folder?");

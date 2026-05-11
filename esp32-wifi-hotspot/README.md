@@ -54,12 +54,20 @@ esp32-wifi-hotspot/
 The `data/` folder is the convention used by the Arduino tooling — anything
 in there becomes the contents of the ESP32's LittleFS partition.
 
+## Hardware
+
+Tested on an **Arduino Nano ESP32** (ESP32-S3 inside, PCB antenna on the
+module — no external antenna or extra parts needed). Any other ESP32 dev
+board with WiFi will also work; just pick the matching entry in
+*Tools → Board*.
+
 ## Prerequisites
 
 - **Arduino IDE 2.x** (recommended) or PlatformIO.
-- ESP32 board support **v2.0 or newer** — *Boards Manager* → install
-  **esp32 by Espressif Systems**. (v2.0+ ships LittleFS in the core; no
-  separate library needed.)
+- The **Arduino ESP32 board package** — *Boards Manager* → install
+  **esp32 by Espressif Systems** (v2.0+). On a fresh Arduino IDE 2.x,
+  installing the *Arduino Nano ESP32* board through *Boards Manager* will
+  also pull in the Espressif core automatically.
 - The **LittleFS upload plugin** for Arduino IDE 2.x:
   [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload).
   Install instructions are in that repo's README — usually it's just
@@ -86,10 +94,13 @@ ESP32 over the same USB cable, just via different menu items.
 
 ### 1. Upload the sketch (firmware)
 
-1. Plug the ESP32 in over USB.
-2. *Tools → Board* → your ESP32 variant (e.g. *ESP32 Dev Module*).
+1. Plug the board in over USB-C.
+2. *Tools → Board* → **Arduino Nano ESP32** (or your ESP32 variant).
 3. *Tools → Port* → the serial port that appeared.
-4. Click **Upload** (the arrow button).
+4. *Tools → Partition Scheme* → leave on the default. The Nano ESP32's
+   default scheme already reserves a LittleFS partition; if you ever
+   switch to a "no FS" scheme the filesystem upload will fail.
+5. Click **Upload** (the arrow button).
 
 ### 2. Upload the filesystem (the HTML page)
 
