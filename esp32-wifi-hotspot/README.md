@@ -19,7 +19,9 @@ landing page.
    `/connecttest.txt`, etc.) with a `302` redirect to `/`. This is what
    tells phones "you're behind a captive portal" — they then automatically
    pop the sign-in sheet showing your page.
-4. The landing page itself is just static HTML with security tips.
+4. The landing page lives in `data/index.html` and is served from a
+   **LittleFS** partition on the ESP32 — you upload it once, separately
+   from the sketch, and you can edit it without recompiling.
 
 ## Ethics & legality — read this
 
@@ -40,37 +42,86 @@ This is **not** fine and likely illegal in many places:
 
 When in doubt: get explicit consent from the venue and audience.
 
+## Layout
+
+```
+esp32-wifi-hotspot/
+├── esp32-wifi-hotspot.ino   # the sketch (firmware)
+└── data/
+    └── index.html           # the landing page (uploaded to LittleFS)
+```
+
+The `data/` folder is the convention used by the Arduino tooling — anything
+in there becomes the contents of the ESP32's LittleFS partition.
+
 ## Prerequisites
 
-- Arduino IDE (1.8.x or 2.x) or PlatformIO.
-- ESP32 board support — *Boards Manager* → install **esp32 by Espressif Systems**.
-- No external libraries; `WiFi.h`, `WebServer.h`, and `DNSServer.h` all
-  ship with the ESP32 Arduino core.
+- **Arduino IDE 2.x** (recommended) or PlatformIO.
+- ESP32 board support **v2.0 or newer** — *Boards Manager* → install
+  **esp32 by Espressif Systems**. (v2.0+ ships LittleFS in the core; no
+  separate library needed.)
+- The **LittleFS upload plugin** for Arduino IDE 2.x:
+  [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload).
+  Install instructions are in that repo's README — usually it's just
+  dropping a `.vsix` file into `~/.arduinoIDE/plugins/`.
+  (PlatformIO users: skip this, you already have `platformio run --target uploadfs`.)
+- No external Arduino libraries; `WiFi.h`, `WebServer.h`, `DNSServer.h`,
+  and `LittleFS.h` all ship with the ESP32 Arduino core.
 
 ## Configure
 
-Edit the top of `esp32-wifi-hotspot.ino`:
+Two things you can edit independently:
 
-```cpp
-const char* AP_SSID    = "ScAIdev";
-const char* DEMO_OWNER = "Your friendly neighborhood demo";
-```
+1. **The SSID** — top of `esp32-wifi-hotspot.ino`:
+   ```cpp
+   const char* AP_SSID = "ScAIdev";
+   ```
+2. **The page** — `data/index.html`. Open it in any editor (or your
+   browser, for live preview) and change whatever you like.
 
-`DEMO_OWNER` is the sign-off shown at the bottom of the landing page —
-put your name, your meetup, your company, whatever.
+## Flash — two upload steps
 
-## Flash
+You upload the sketch and the filesystem **separately**. Both go to the
+ESP32 over the same USB cable, just via different menu items.
+
+### 1. Upload the sketch (firmware)
 
 1. Plug the ESP32 in over USB.
 2. *Tools → Board* → your ESP32 variant (e.g. *ESP32 Dev Module*).
 3. *Tools → Port* → the serial port that appeared.
-4. **Upload**.
-5. Open Serial Monitor at **115200 baud**. Expected:
-   ```
-   Captive demo AP started
-   SSID: ScAIdev
-   IP:   192.168.4.1
-   ```
+4. Click **Upload** (the arrow button).
+
+### 2. Upload the filesystem (the HTML page)
+
+Arduino IDE 2.x, with the plugin installed:
+
+1. Make sure the Serial Monitor is **closed** (it holds the port open).
+2. `Ctrl+Shift+P` (or `Cmd+Shift+P` on macOS) → type
+   **"Upload LittleFS to Pico/ESP8266/ESP32"** → Enter.
+3. Watch the bottom panel for "Hard resetting via RTS pin..." — done.
+
+PlatformIO:
+
+```
+pio run --target uploadfs
+```
+
+You only need to redo this step when you change `data/index.html` — the
+sketch itself doesn't need re-uploading.
+
+### Verify
+
+Open Serial Monitor at **115200 baud**. Expected:
+
+```
+Captive demo AP started
+SSID: ScAIdev
+IP:   192.168.4.1
+```
+
+If you see `LittleFS mount failed` or browsing `/` returns
+`index.html missing from LittleFS`, you forgot step 2 — upload the
+filesystem.
 
 ## Demo flow
 
