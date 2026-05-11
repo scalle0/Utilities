@@ -1,7 +1,8 @@
 # ESP32 Public-WiFi Awareness Demo
 
-Turns an ESP32 into an open WiFi access point with a **captive portal** that
-auto-pops a tongue-in-cheek "gotcha" page the moment someone connects. The
+Turns an ESP32 into an open WiFi access point named **`ScAIdev`** with a
+**captive portal** that auto-pops a tongue-in-cheek "gotcha" page the moment
+someone connects. The
 landing page explains what an attacker on a rogue hotspot *could* do and
 how to stay safer.
 
@@ -10,7 +11,7 @@ landing page.
 
 ## How it works
 
-1. ESP32 broadcasts an open AP (default SSID: `Free Public WiFi`).
+1. ESP32 broadcasts an open AP (default SSID: `ScAIdev`).
 2. A built-in **DNS server** answers every domain lookup with the ESP32's
    own IP (`192.168.4.1`), so any URL resolves to the device.
 3. The ESP32 responds to the OS-specific *captive portal probe* URLs
@@ -51,7 +52,7 @@ When in doubt: get explicit consent from the venue and audience.
 Edit the top of `esp32-wifi-hotspot.ino`:
 
 ```cpp
-const char* AP_SSID    = "Free Public WiFi";
+const char* AP_SSID    = "ScAIdev";
 const char* DEMO_OWNER = "Your friendly neighborhood demo";
 ```
 
@@ -67,14 +68,14 @@ put your name, your meetup, your company, whatever.
 5. Open Serial Monitor at **115200 baud**. Expected:
    ```
    Captive demo AP started
-   SSID: Free Public WiFi
+   SSID: ScAIdev
    IP:   192.168.4.1
    ```
 
 ## Demo flow
 
 1. Show the audience the SSID list on their phones — point out yours.
-2. Have a volunteer connect to `Free Public WiFi`.
+2. Have a volunteer connect to `ScAIdev`.
 3. Within a second or two their phone auto-opens the landing page. No
    browser, no typing.
 4. Read it out loud, walk through the safety tips.

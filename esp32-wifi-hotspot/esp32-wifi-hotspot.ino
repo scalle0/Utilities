@@ -6,7 +6,7 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 
-const char* AP_SSID    = "Free Public WiFi";
+const char* AP_SSID    = "ScAIdev";
 const char* DEMO_OWNER = "Your friendly neighborhood demo";
 
 const IPAddress AP_IP(192, 168, 4, 1);
