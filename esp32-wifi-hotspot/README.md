@@ -47,6 +47,7 @@ When in doubt: get explicit consent from the venue and audience.
 ```
 esp32-wifi-hotspot/
 ├── esp32-wifi-hotspot.ino   # the sketch (firmware)
+├── partitions.csv           # custom 16 MB layout with LittleFS partition
 └── data/                    # everything in here is uploaded to LittleFS
     ├── index.html           # Recall Agent demo (served at /)
     ├── gotcha.html          # original awareness page (served at /gotcha)
@@ -60,6 +61,23 @@ esp32-wifi-hotspot/
         ├── scenario_noanswer.mp3
         └── scenario_stop.mp3
 ```
+
+### Why `partitions.csv` is here
+
+The Nano ESP32's stock partition scheme (`app3M_fat9M_fact512k_16MB`)
+allocates its 9 MB of data space to **FAT**, not SPIFFS/LittleFS, so the
+`arduino-littlefs-upload` plugin can't find a partition to write to and
+errors with `Partition entry not found in csv file!`.
+
+Dropping a `partitions.csv` next to the sketch overrides the board's
+default. Our custom scheme gives:
+
+- 2 × 3 MB app partitions (OTA-capable)
+- ~9.94 MB SPIFFS/LittleFS data partition
+
+**You must re-upload the sketch (the firmware) after changing the
+partition table.** Otherwise the running firmware still believes the old
+partition layout exists and the LittleFS upload won't be visible.
 
 Total `data/` payload is ~**3.6 MB** (mostly the four audio files). The
 Nano ESP32's default partition scheme allocates ~4 MB to LittleFS, so it
