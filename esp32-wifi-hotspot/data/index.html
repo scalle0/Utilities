@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recall Agent — Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+/* Locally hosted fonts (served from /fonts/ on the ESP32's LittleFS).
+   The Google Fonts link above only loads if the device has internet;
+   the @font-face rules below cover the offline case. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('/fonts/intertight-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('/fonts/intertight-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrainsmono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/fonts/jetbrainsmono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+:root {
+  --bg: #faf9f6;
+  --panel: #ffffff;
+  --ink: #1a1a1a;
+  --ink-2: #555;
+  --ink-3: #888;
+  --line: rgba(0,0,0,0.08);
+  --line-2: rgba(0,0,0,0.14);
+  --accent: #0f3d2e;
+  --accent-soft: #e8efe9;
+  --amber: #b8741a;
+  --amber-soft: #fbf0d9;
+  --red: #9c2b2b;
+  --red-soft: #fae8e8;
+  --blue: #1a4d80;
+  --blue-soft: #e6eef7;
+  --purple: #4a3a8a;
+  --purple-soft: #ece8f7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter Tight', sans-serif; font-size: 14px; line-height: 1.5; }
+.app { max-width: 1400px; margin: 0 auto; padding: 24px 32px 48px; }
+.header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.header h1 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 28px; letter-spacing: -0.02em; }
+.header .sub { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.header .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); text-align: right; }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.tab { padding: 10px 18px; cursor: pointer; font-size: 13px; color: var(--ink-2); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+.tab:hover:not(.active) { color: var(--ink); }
+.view { display: none; }
+.view.active { display: block; }
+
+.control-bar { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.control-bar .ctrl-label { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; font-family: 'JetBrains Mono', monospace; }
+.scenario-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.scenario-pick button { padding: 8px 12px; border: 1px solid var(--line-2); background: white; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.15s; }
+.scenario-pick button.active { background: var(--accent); color: white; border-color: var(--accent); }
+.scenario-pick button:hover:not(.active) { background: var(--bg); }
+.speed-control { display: flex; align-items: center; gap: 10px; }
+.speed-control input { width: 100px; }
+.run-btn { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; letter-spacing: 0.02em; transition: all 0.15s; }
+.run-btn:hover { background: #0a2a1f; }
+.run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.reset-btn { padding: 10px 14px; background: white; color: var(--ink); border: 1px solid var(--line-2); border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.panel-header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; background: #fcfbf7; }
+.panel-header h2 { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+.panel-header .badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-3); padding: 3px 8px; border: 1px solid var(--line); border-radius: 4px; }
+.panel-body { padding: 20px; min-height: 460px; max-height: 720px; overflow-y: auto; }
+
+.event { display: flex; gap: 14px; padding-bottom: 18px; position: relative; opacity: 0; transform: translateY(8px); animation: fadeIn 0.4s forwards; }
+@keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+.event:not(:last-child)::before { content: ''; position: absolute; left: 12px; top: 28px; bottom: 0; width: 1px; background: var(--line-2); }
+.event .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-family: 'JetBrains Mono', monospace; position: relative; z-index: 1; }
+.event.thinking .dot { background: var(--purple-soft); border-color: var(--purple); color: var(--purple); }
+.event.tool .dot { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+.event.action .dot { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.event.escalation .dot { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+.event.critical .dot { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+.event .body { flex: 1; min-width: 0; }
+.event .head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.event .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; }
+.event.thinking .label { color: var(--purple); }
+.event.tool .label { color: var(--blue); }
+.event.action .label { color: var(--accent); }
+.event.escalation .label { color: var(--amber); }
+.event.critical .label { color: var(--red); }
+.event .time { font-size: 11px; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; }
+.event .title { font-size: 14px; color: var(--ink); margin-bottom: 4px; }
+.event .detail { font-size: 13px; color: var(--ink-2); }
+.event .code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #f5f3ee; border: 1px solid var(--line); padding: 8px 10px; border-radius: 5px; margin-top: 6px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+.event .transcript { margin-top: 8px; border-left: 2px solid var(--purple); padding-left: 12px; }
+.event .transcript .line { font-size: 13px; margin-bottom: 4px; }
+.event .transcript .line .who { font-weight: 500; color: var(--purple); }
+.event .transcript .line.pat .who { color: var(--accent); }
+
+.empty { text-align: center; color: var(--ink-3); font-size: 13px; padding: 60px 20px; font-style: italic; }
+.empty svg { width: 32px; height: 32px; opacity: 0.4; margin-bottom: 12px; }
+
+.patient-card { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 14px; align-items: center; }
+.patient-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 15px; font-family: 'Fraunces', serif; }
+.patient-info { flex: 1; }
+.patient-name { font-size: 15px; font-weight: 500; }
+.patient-meta { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.patient-status { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 4px; }
+.patient-status.green { background: var(--accent-soft); color: var(--accent); }
+.patient-status.amber { background: var(--amber-soft); color: var(--amber); }
+.patient-status.red { background: var(--red-soft); color: var(--red); }
+
+.window-strip { padding: 16px 20px; border-bottom: 1px solid var(--line); background: #fcfbf7; }
+.window-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
+.window-bar { height: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; position: relative; }
+.window-fill { height: 100%; background: var(--accent); transition: width 0.5s, background 0.5s; }
+.window-fill.warn { background: var(--amber); }
+.window-fill.danger { background: var(--red); }
+
+.dash-section { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.dash-section:last-child { border-bottom: none; }
+.dash-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; display: flex; justify-content: space-between; }
+.attempt { display: grid; grid-template-columns: 60px 1fr 90px; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 13px; align-items: center; }
+.attempt:last-child { border-bottom: none; }
+.attempt .when { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); }
+.attempt .what { color: var(--ink); }
+.attempt .what .channel { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+.attempt .outcome { text-align: center; font-size: 10px; padding: 3px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+.attempt .outcome.ok { background: var(--accent-soft); color: var(--accent); }
+.attempt .outcome.no { background: #eee; color: var(--ink-2); }
+.attempt .outcome.fail { background: var(--red-soft); color: var(--red); }
+.attempt .outcome.warn { background: var(--amber-soft); color: var(--amber); }
+
+.summary-box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+.summary-box .key { color: var(--ink); font-weight: 500; }
+.summary-box strong { color: var(--ink); }
+
+.action-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.action-row button { padding: 8px 14px; border: 1px solid var(--line-2); background: white; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 12px; transition: all 0.15s; }
+.action-row button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.action-row button.primary:hover { background: #0a2a1f; }
+.action-row button:hover:not(.primary) { background: var(--bg); }
+
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.kpi .v { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+.kpi .l { font-size: 11px; color: var(--ink-3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; }
+
+.legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; font-size: 11px; color: var(--ink-2); font-family: 'JetBrains Mono', monospace; }
+.legend .item { display: flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 10px; height: 10px; border-radius: 50%; border: 1px solid; }
+
+footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 11px; color: var(--ink-3); text-align: center; font-family: 'JetBrains Mono', monospace; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(15, 25, 20, 0.55); display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+.modal-bg.show { display: flex; }
+.modal { background: var(--panel); border-radius: 12px; width: 100%; max-width: 760px; max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.25); }
+.modal-head { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; background: #fcfbf7; }
+.modal-head h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+.modal-head .close-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--ink-3); padding: 4px 8px; line-height: 1; }
+.modal-head .close-btn:hover { color: var(--ink); }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-foot { padding: 14px 24px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; background: #fcfbf7; }
+.modal-foot button { padding: 8px 16px; border: 1px solid var(--line-2); background: white; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 13px; }
+.modal-foot button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.modal-foot button:hover:not(.primary) { background: var(--bg); }
+.modal-foot button.primary:hover { background: #0a2a1f; }
+
+.transcript-full { font-family: inherit; }
+.transcript-full .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.transcript-full .meta div { margin: 2px 0; }
+.transcript-full .line { padding: 8px 0; font-size: 14px; line-height: 1.6; border-bottom: 1px dashed rgba(0,0,0,0.05); }
+.transcript-full .line:last-child { border-bottom: none; }
+.transcript-full .line .ts { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); margin-right: 10px; }
+.transcript-full .line .who { font-weight: 500; color: var(--purple); margin-right: 6px; }
+.transcript-full .line.pat .who { color: var(--accent); }
+
+.epd-note { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; white-space: pre-wrap; color: var(--ink); }
+
+.appt-form { display: flex; flex-direction: column; gap: 14px; }
+.appt-form .field { display: flex; flex-direction: column; gap: 5px; }
+.appt-form label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; }
+.appt-form input, .appt-form select, .appt-form textarea { padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 6px; font-family: inherit; font-size: 14px; background: white; }
+.appt-form input:focus, .appt-form select:focus, .appt-form textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.audit-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.audit-table th { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line-2); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; background: #fcfbf7; position: sticky; top: 0; }
+.audit-table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.audit-table td.ts { color: var(--ink-3); white-space: nowrap; }
+.audit-table td.actor { color: var(--purple); }
+.audit-table td.actor.system { color: var(--blue); }
+.audit-table td.actor.human { color: var(--accent); }
+.audit-table td.hash { color: var(--ink-3); font-size: 10px; }
+.audit-table tr:hover td { background: var(--bg); }
+
+.compliance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.compliance-card { padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.compliance-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+.compliance-card .v { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; }
+.compliance-card .d { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.compliance-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+.compliance-pill.ok { background: var(--accent-soft); color: var(--accent); }
+.compliance-pill.warn { background: var(--amber-soft); color: var(--amber); }
+
+.note-actions { display: flex; gap: 8px; margin-top: 14px; }
+.note-actions button { padding: 8px 14px; border: 1px solid var(--line-2); background: white; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 12px; }
+.note-actions button:hover { background: var(--bg); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div>
+    <h1>Recall agent voor long-acting HIV therapie</h1>
+    <div class="sub">Demo voor ARC verpleegkundigen — long-acting HIV therapie · 8-weekly</div>
+  </div>
+  <div class="meta">
+    DEMO BUILD v0.2<br>
+    NIET VOOR KLINISCH GEBRUIK
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-view="demo">Live demo</div>
+  <div class="tab" data-view="overview">Wat heeft de agent gedaan</div>
+  <div class="tab" data-view="audit">Audit trail</div>
+</div>
+
+<div class="view active" id="view-demo">
+
+<div class="control-bar">
+  <div>
+    <span class="ctrl-label">Scenario</span>
+    <div class="scenario-pick" id="scenario-pick">
+      <button data-scenario="logistical" class="active">1. Logistiek</button>
+      <button data-scenario="medical">2. Medisch probleem</button>
+      <button data-scenario="noanswer">3. Geen antwoord</button>
+      <button data-scenario="stop">4. Wil stoppen</button>
+    </div>
+  </div>
+  <div>
+    <span class="ctrl-label">Tempo</span>
+    <div class="speed-control">
+      <input type="range" id="speed" min="200" max="2500" value="900" step="100">
+      <span id="speed-out" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); min-width: 50px;">0.9s</span>
+    </div>
+  </div>
+  <div style="margin-left: auto; display: flex; gap: 8px;">
+    <button class="reset-btn" id="reset-btn">Reset</button>
+    <button class="run-btn" id="run-btn">Start scenario →</button>
+  </div>
+</div>
+
+<div class="split">
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Agent denken & acties</h2>
+      <span class="badge" id="agent-status">IDLE</span>
+    </div>
+    <div class="panel-body" id="agent-feed">
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
+        <div>Kies een scenario en druk start.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Verpleegkundige dashboard</h2>
+      <span class="badge" id="dash-status">WACHT OP UPDATES</span>
+    </div>
+    <div id="dash-body">
+
+      <div class="patient-card">
+        <div class="patient-avatar">PV</div>
+        <div class="patient-info">
+          <div class="patient-name">P. V., 1981 (♂)</div>
+          <div class="patient-meta">long-acting HIV therapie · 14e injectie · Behandelend arts: dr. Janssens</div>
+        </div>
+        <span class="patient-status green" id="patient-status">IN WINDOW</span>
+      </div>
+
+      <div class="window-strip">
+        <div class="window-label">
+          <span>Window dag 0 → +7 na geplande injectie</span>
+          <span id="window-text">7 dagen open</span>
+        </div>
+        <div class="window-bar">
+          <div class="window-fill" id="window-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <div class="dash-section-title">
+          <span>Contactpogingen</span>
+          <span id="attempts-count">0</span>
+        </div>
+        <div id="attempts-list">
+          <div style="font-size: 12px; color: var(--ink-3); font-style: italic; padding: 10px 0;">Nog geen pogingen.</div>
+        </div>
+      </div>
+
+      <div class="dash-section" id="ai-summary-section" style="display: none;">
+        <div class="dash-section-title">AI samenvatting voor verpleegkundige</div>
+        <div class="summary-box" id="ai-summary"></div>
+        <div class="action-row" id="action-buttons"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <div class="item"><span class="swatch" style="background: var(--purple-soft); border-color: var(--purple);"></span>Agent redenering (LLM)</div>
+  <div class="item"><span class="swatch" style="background: var(--blue-soft); border-color: var(--blue);"></span>Tool call (deterministisch)</div>
+  <div class="item"><span class="swatch" style="background: var(--accent-soft); border-color: var(--accent);"></span>Externe actie (SMS/voice)</div>
+  <div class="item"><span class="swatch" style="background: var(--amber-soft); border-color: var(--amber);"></span>Escalatie</div>
+  <div class="item"><span class="swatch" style="background: var(--red-soft); border-color: var(--red);"></span>Kritieke beslissing</div>
+</div>
+
+</div>
+
+<div class="view" id="view-overview">
+
+<div class="kpi-row">
+  <div class="kpi"><div class="v" id="kpi-pogingen">0</div><div class="l">Pogingen totaal</div></div>
+  <div class="kpi"><div class="v" id="kpi-tijd">0 min</div><div class="l">Tijd verpleegkundige</div></div>
+  <div class="kpi"><div class="v" id="kpi-bespaard">0 min</div><div class="l">Tijd bespaard</div></div>
+  <div class="kpi"><div class="v" id="kpi-outcome">—</div><div class="l">Resultaat</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>Werkstroom samenvatting</h2>
+    <span class="badge">SCENARIO LOG</span>
+  </div>
+  <div class="panel-body" id="overview-body">
+    <div class="empty">Run eerst een scenario op het demo tabblad.</div>
+  </div>
+</div>
+
+</div>
+
+<div class="view" id="view-audit">
+
+<div class="compliance-grid">
+  <div class="compliance-card">
+    <h4>MDR Annex I §17 — Software requirements</h4>
+    <div class="v">Traceability gegarandeerd</div>
+    <div class="d">Elke actie heeft tijdstempel, actor, input, output en hash. Append-only log, geen edits mogelijk.</div>
+    <div style="margin-top: 8px;"><span class="compliance-pill ok">CONFORM (DEMO)</span></div>
+  </div>
+  <div class="compliance-card">
+    <h4>EU AI Act Art. 12 — Record-keeping</h4>
+    <div class="v">Automatische event logging</div>
+    <div class="d">High-risk AI systeem: alle inputs, decisions en outputs gelogd voor minimum 10 jaar.</div>
+    <div style="margin-top: 8px;"><span class="compliance-pill ok">CONFORM (DEMO)</span></div>
+  </div>
+  <div class="compliance-card">
+    <h4>EU AI Act Art. 14 — Human oversight</h4>
+    <div class="v">Mens steeds in de loop bij klinische beslissing</div>
+    <div class="d">Agent escaleert naar verpleegkundige of arts bij elk medisch signaal of buiten scope.</div>
+    <div style="margin-top: 8px;"><span class="compliance-pill ok">CONFORM (DEMO)</span></div>
+  </div>
+  <div class="compliance-card">
+    <h4>GDPR Art. 22 — Geen geautomatiseerde beslissing</h4>
+    <div class="v">Patient kan menselijke review opvragen</div>
+    <div class="d">Alle therapeutische beslissingen door arts. AI doet alleen administratieve handelingen.</div>
+    <div style="margin-top: 8px;"><span class="compliance-pill ok">CONFORM (DEMO)</span></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>Audit log — case REC-<span id="audit-case-id">2826</span></h2>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span class="badge" id="audit-count">0 events</span>
+      <button onclick="downloadAuditLog()" style="padding: 4px 10px; border: 1px solid var(--line-2); background: white; border-radius: 4px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 10px;">EXPORT JSON</button>
+    </div>
+  </div>
+  <div class="panel-body" id="audit-body" style="max-height: none;">
+    <div class="empty">Run eerst een scenario.</div>
+  </div>
+</div>
+
+<div style="margin-top: 16px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; font-size: 12px; color: var(--ink-2); line-height: 1.6;">
+  <strong style="color: var(--ink);">MDR positionering opmerking.</strong> Deze recall agent is ontworpen als <em>niet-medical-device</em> software (klasse buiten MDR, of klasse I): hij voert geen diagnostische of therapeutische beslissingen uit. Alle klinische beslissingen (oral bridging, medische evaluatie, behandelaanpassing) worden expliciet door arts of verpleegkundige genomen. De audit trail hierboven dekt echter de strengere vereisten van klasse IIb plus EU AI Act, zodat eventuele scope-uitbreiding zonder herontwerp mogelijk is.
+</div>
+
+</div>
+
+<footer>
+  Standalone demo · alle data fictief · geen externe API calls · ontwikkeld voor demonstratie ARC verpleegkundigen
+</footer>
+
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Title</h3>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<script>
+const scenarios = {
+  logistical: {
+    label: "Logistiek probleem",
+    summary: "Patiënt vergat afspraak door werk. Agent heeft nieuwe afspraak ingeboekt binnen window. Geen escalatie nodig.",
+    outcome: "Opgelost door agent",
+    outcomeClass: "green",
+    nurseTimeBefore: 22,
+    nurseTimeAfter: 2,
+    transcriptDuration: "1:34",
+    events: [
+      { type: "thinking", label: "T+0u · trigger", title: "EPD trigger: no-show gedetecteerd", detail: "Geplande injectie 09:00 niet uitgevoerd. Patient gebeld 10:30 (geen antwoord). EPD stuurt event naar recall agent." },
+      { type: "tool", label: "T+0u · tool", title: "get_patient_context(patient_id=P-2847)", code: '{\n  "patient_id": "P-2847",\n  "regimen": "LA_HIV_therapy_8_week",\n  "last_injection": "2026-03-22",\n  "scheduled": "2026-05-17",\n  "window_end": "2026-05-24",\n  "preferred_lang": "NL",\n  "consent_voice_ai": true,\n  "previous_no_shows_12m": 1\n}' },
+      { type: "thinking", label: "T+0u · redenering", title: "Plan: stepwise contact, escaleer pas bij geen respons", detail: "Patient heeft 1 eerdere no-show maar lage frequentie. Window 7 dagen ruim. Start met laagdrempelige SMS, escaleer bij stilte." },
+      { type: "tool", label: "T+0u · tool", title: "send_sms(patient_id, template='miss_v1', lang='NL')", code: '"Beste, we zagen u vandaag niet op uw afspraak voor uw\\nlangwerkende HIV behandeling. U heeft nog 7 dagen om langs\\nte komen. Boek snel een nieuw slot via de link in deze SMS.\\nVragen? Bel het ARC team. — ARC"' },
+      { type: "action", label: "T+0u · SMS verzonden", title: "Eerste SMS afgeleverd", detail: "Delivery receipt ontvangen. Geen reactie binnen 24u, dan volgende stap." },
+      { type: "thinking", label: "T+24u · wachtperiode", title: "Geen SMS reactie", detail: "Geen klik op booking link, geen antwoord. Escaleer naar tweede kanaal volgens protocol." },
+      { type: "tool", label: "T+48u · tool", title: "make_voice_call(patient_id, objective='reschedule_within_window')", code: '{\n  "scope": "appointment_only",\n  "max_duration_min": 5,\n  "language": "NL",\n  "fallback": "escalate_to_nurse",\n  "guardrails": [\n    "no_medical_advice",\n    "no_diagnosis",\n    "stop_on_distress"\n  ]\n}' },
+      { type: "action", label: "T+48u · voice agent belt", title: "Conversational AI start gesprek", transcript: [
+        { who: "Agent", text: "Goedemorgen, dit is een geautomatiseerde oproep van het ARC team. Spreek ik met meneer V.?" },
+        { who: "Patient", text: "Ja, dat ben ik.", patient: true },
+        { who: "Agent", text: "We zagen u eergisteren niet op uw injectie afspraak. Kan ik u helpen een nieuwe afspraak in te plannen binnen de komende 5 dagen?" },
+        { who: "Patient", text: "Oh ja, sorry, ik had het helemaal vergeten. Ik was vorige week op buitenlandse opdracht.", patient: true },
+        { who: "Agent", text: "Geen probleem. Ik heb drie momenten voor u: donderdag 09:00, vrijdag 11:30 of maandag 14:00. Welke past best?" },
+        { who: "Patient", text: "Vrijdag 11:30 is goed.", patient: true },
+        { who: "Agent", text: "Genoteerd. U krijgt zo een bevestiging via SMS. Belangrijke vraag nog: zijn er sinds uw laatste injectie problemen geweest die ik aan het team moet melden? Bijwerkingen, koorts, andere medicatie?" },
+        { who: "Patient", text: "Nee, alles goed.", patient: true },
+        { who: "Agent", text: "Bedankt. Tot vrijdag." }
+      ]},
+      { type: "tool", label: "T+48u · tool", title: "propose_appointment_slots() → patient kiest vr 11:30", code: '{\n  "selected_slot": "2026-05-22T11:30",\n  "within_window": true,\n  "days_before_window_close": 2\n}' },
+      { type: "tool", label: "T+48u · tool", title: "book_appointment(slot, send_confirmation=true)", code: '{\n  "appointment_id": "APT-49281",\n  "confirmation_sent": true,\n  "calendar_updated": true\n}' },
+      { type: "tool", label: "T+48u · tool", title: "log_action(category='resolved_by_agent')", code: '{\n  "case_id": "REC-2826",\n  "status": "RESOLVED",\n  "human_handoff": false,\n  "transcript_stored": "encrypted",\n  "audit_trail": "complete"\n}' },
+      { type: "action", label: "T+48u · samenvatting naar VPK", title: "Briefing voor verpleegkundige aangemaakt", detail: "Volledige case log + transcript beschikbaar in EPD. VPK hoeft niets te doen, ziet alleen bevestiging." }
+    ]
+  },
+  medical: {
+    label: "Medisch probleem",
+    summary: "Patient meldt koorts en lokale reactie. Agent escaleert onmiddellijk naar verpleegkundige en arts.",
+    outcome: "Escalatie naar arts",
+    outcomeClass: "amber",
+    nurseTimeBefore: 35,
+    nurseTimeAfter: 12,
+    transcriptDuration: "0:48",
+    events: [
+      { type: "thinking", label: "T+0u · trigger", title: "EPD trigger: no-show gedetecteerd", detail: "Patient niet verschenen voor injectie 14:00. Recall workflow gestart." },
+      { type: "tool", label: "T+0u · tool", title: "get_patient_context(patient_id=P-2847)", code: '{\n  "regimen": "LA_HIV_therapy_8_week",\n  "scheduled": "2026-05-17",\n  "window_end": "2026-05-24",\n  "preferred_lang": "NL",\n  "consent_voice_ai": true\n}' },
+      { type: "tool", label: "T+0u · tool", title: "send_sms(template='miss_v1', lang='NL')" },
+      { type: "action", label: "T+0u · SMS verzonden", title: "Eerste SMS afgeleverd", detail: "Geen reactie binnen 24u." },
+      { type: "tool", label: "T+48u · tool", title: "make_voice_call(scope='appointment_only')" },
+      { type: "action", label: "T+48u · voice agent belt", title: "Conversational AI start gesprek", transcript: [
+        { who: "Agent", text: "Goedemiddag, dit is een geautomatiseerde oproep van het ARC team. Spreek ik met meneer V.?" },
+        { who: "Patient", text: "Ja.", patient: true },
+        { who: "Agent", text: "We zagen u eergisteren niet op uw afspraak. Kan ik helpen een nieuwe te plannen?" },
+        { who: "Patient", text: "Eerlijk gezegd, ik heb sinds vorige week koorts en mijn arm op de plaats van de vorige prik is rood en gezwollen, dus ik wist niet of ik moest komen.", patient: true },
+        { who: "Agent", text: "Bedankt dat u dat meldt. Dit is iets wat een verpleegkundige snel moet beoordelen. Ik ga uw oproep nu doorverbinden met het ARC team. Blijft u aan de lijn?" },
+        { who: "Patient", text: "Ja.", patient: true }
+      ]},
+      { type: "thinking", label: "T+48u · trigger detectie", title: "Klinisch signaal gedetecteerd", detail: "Keywords 'koorts' + 'rood' + 'gezwollen' + 'arm' triggeren guardrail. Agent stopt scope 'appointment_only' en activeert escalatie protocol." },
+      { type: "tool", label: "T+48u · tool", title: "escalate_to_nurse(urgency='same_day')", code: '{\n  "reason": "possible_adverse_event_post_injection",\n  "symptoms_reported": [\n    "fever_duration_1_week",\n    "injection_site_redness_swelling"\n  ],\n  "live_transfer_requested": true,\n  "differential_diagnosis": [\n    "ernstige lokale reactie",\n    "cellulitis",\n    "intercurrente infectie"\n  ]\n}' },
+      { type: "escalation", label: "T+48u · LIVE TRANSFER", title: "Doorverbonden met VPK Marleen", detail: "Voice agent levert in 8 seconden gestructureerde overdracht. VPK neemt gesprek live over." },
+      { type: "tool", label: "T+48u · tool", title: "notify_physician(urgency='same_day')", code: '{\n  "physician_on_call": "dr_janssens",\n  "page_sent": true,\n  "summary_attached": true\n}' },
+      { type: "critical", label: "T+48u · arts genotificeerd", title: "Behandelend arts gepaged", detail: "Volledige context + transcript beschikbaar. Arts kan binnen 4u terugbellen of patient inplannen voor zelfde-dag evaluatie." }
+    ]
+  },
+  noanswer: {
+    label: "Geen antwoord",
+    summary: "Patient reageert op niets. Agent escaleert progressief, arts beslist over oral bridging op dag 6.",
+    outcome: "Oral bridging gestart",
+    outcomeClass: "red",
+    nurseTimeBefore: 55,
+    nurseTimeAfter: 15,
+    transcriptDuration: "0:00 (voicemail)",
+    events: [
+      { type: "thinking", label: "T+0u · trigger", title: "EPD trigger: no-show gedetecteerd", detail: "Patient niet verschenen. Recall workflow gestart." },
+      { type: "tool", label: "T+0u · tool", title: "send_sms(template='miss_v1')" },
+      { type: "action", label: "T+0u · SMS", title: "Eerste SMS afgeleverd", detail: "Delivery OK. Geen klik, geen reactie binnen 24u." },
+      { type: "tool", label: "T+24u · tool", title: "send_sms(template='miss_v2_urgency')" },
+      { type: "action", label: "T+24u · SMS", title: "Tweede SMS met urgentie", detail: "Geen reactie." },
+      { type: "tool", label: "T+48u · tool", title: "make_voice_call(scope='appointment_only')" },
+      { type: "action", label: "T+48u · voice agent belt", title: "Geen antwoord, voicemail ingesproken", detail: "Gestructureerde voicemail met terugbelnummer. Tweede poging gepland T+72u." },
+      { type: "tool", label: "T+72u · tool", title: "make_voice_call(retry=2)" },
+      { type: "action", label: "T+72u · tweede belpoging", title: "Geen antwoord op ander tijdstip (avond)", detail: "Twee succesvolle SMS deliveries, twee onbeantwoorde calls. Window nog 4 dagen open." },
+      { type: "thinking", label: "T+96u · drempel bereikt", title: "Escalatie criterium voldaan", detail: "4x contact zonder respons + window <4 dagen. Activeer human handoff." },
+      { type: "escalation", label: "T+96u · handoff", title: "Case overgedragen aan VPK", detail: "Verpleegkundige Marleen krijgt prioritaire taak met volledige context. AI heeft 4 pogingen gedaan, 0 minuten van VPK tijd verbruikt tot nu." },
+      { type: "tool", label: "T+120u · tool", title: "VPK belt 2x, geen antwoord. Agent log update." },
+      { type: "thinking", label: "T+144u · klinische drempel", title: "Window sluit binnen 24u", detail: "Patient heeft geen contact gehad. Risico op virologische rebound stijgt. Notificeer arts voor bridging beslissing." },
+      { type: "tool", label: "T+144u · tool", title: "notify_physician(decision_needed='oral_bridging')", code: '{\n  "context": "no_contact_in_6_days",\n  "window_closes_in_hours": 24,\n  "options": [\n    "oral_bridging_start",\n    "final_outreach_attempt",\n    "no_action"\n  ],\n  "guideline_ref": "internationale richtlijnen"\n}' },
+      { type: "critical", label: "T+144u · arts beslist", title: "Arts: start orale overbruggingstherapie, alarm patient", detail: "Recept elektronisch verzonden. SMS naar patient met apotheek instructies. Care coordinator gealarmeerd voor home visit." },
+      { type: "tool", label: "T+168u · tool", title: "log_action(category='oral_bridging_initiated')", code: '{\n  "treatment_interruption": "documented",\n  "cohort_registry_flag": true,\n  "care_coordinator_active": true\n}' }
+    ]
+  },
+  stop: {
+    label: "Wil stoppen met behandeling",
+    summary: "Patient meldt tijdens voice gesprek dat hij wil stoppen met therapie. Agent escaleert direct naar arts, geen poging tot overtuigen, dossier-nota geprepareerd.",
+    outcome: "Arts-consultatie gepland",
+    outcomeClass: "amber",
+    nurseTimeBefore: 28,
+    nurseTimeAfter: 8,
+    transcriptDuration: "1:12",
+    events: [
+      { type: "thinking", label: "T+0u · trigger", title: "EPD trigger: no-show gedetecteerd", detail: "Patient niet verschenen voor injectie. Recall workflow gestart." },
+      { type: "tool", label: "T+0u · tool", title: "get_patient_context(patient_id=P-2847)", code: '{\n  "regimen": "LA_HIV_therapy_8_week",\n  "scheduled": "2026-05-17",\n  "window_end": "2026-05-24",\n  "preferred_lang": "NL",\n  "consent_voice_ai": true,\n  "previous_no_shows_12m": 0\n}' },
+      { type: "tool", label: "T+0u · tool", title: "send_sms(template='miss_v1', lang='NL')" },
+      { type: "action", label: "T+0u · SMS verzonden", title: "Eerste SMS afgeleverd", detail: "Delivery receipt OK. Geen reactie binnen 24u." },
+      { type: "tool", label: "T+48u · tool", title: "make_voice_call(scope='appointment_only')" },
+      { type: "action", label: "T+48u · voice agent belt", title: "Conversational AI start gesprek", transcript: [
+        { who: "Agent", text: "Goedemiddag, dit is een geautomatiseerde oproep van het ARC team. Spreek ik met meneer V.?" },
+        { who: "Patient", text: "Ja.", patient: true },
+        { who: "Agent", text: "We zagen u eergisteren niet op uw injectie afspraak. Kan ik u helpen een nieuwe afspraak in te plannen?" },
+        { who: "Patient", text: "Ik denk eigenlijk dat ik ermee wil stoppen. Het voelt allemaal te belastend, alle prikken, en ik weet niet of ik dat nog wil.", patient: true },
+        { who: "Agent", text: "Bedankt dat u dat met mij deelt. Dit is een belangrijke beslissing die u met uw behandelend arts moet bespreken, niet met mij. Ik ga ervoor zorgen dat dr. Janssens zo snel mogelijk contact met u opneemt. Kan ik u een afspraak bij hem inplannen, eerder dan via SMS of telefoon?" },
+        { who: "Patient", text: "Ja, een gesprek is goed. Ik wil niet zomaar stoppen zonder iemand te spreken.", patient: true },
+        { who: "Agent", text: "Begrepen. Ik plan een consultatie binnen de komende drie werkdagen en uw arts wordt nu meteen geïnformeerd. U krijgt een bevestiging via SMS." }
+      ]},
+      { type: "thinking", label: "T+48u · scope-stop", title: "Patient uit treatment discontinuation intent", detail: "Patient verklaart wil stoppen. Dit valt expliciet buiten scope 'appointment_only'. Agent doet GEEN poging tot overtuigen of motiverend gesprek. Direct escalatie naar arts." },
+      { type: "tool", label: "T+48u · tool", title: "escalate_to_physician(urgency='within_72h', reason='discontinuation_intent')", code: '{\n  "patient_quote": "ik denk eigenlijk dat ik ermee wil stoppen",\n  "reason_stated": "perceived_treatment_burden",\n  "no_acute_distress_detected": true,\n  "patient_requested_consultation": true,\n  "guardrails_applied": [\n    "no_motivational_interview",\n    "no_clinical_advice",\n    "preserve_patient_autonomy"\n  ]\n}' },
+      { type: "tool", label: "T+48u · tool", title: "book_consultation(physician='dr_janssens', within_days=3)", code: '{\n  "consultation_id": "CON-91384",\n  "scheduled": "2026-05-20T15:00",\n  "type": "shared_decision_making",\n  "confirmation_sms_sent": true\n}' },
+      { type: "tool", label: "T+48u · tool", title: "draft_epd_note(category='consultation_request')", code: '{\n  "note_type": "AI_drafted_for_physician_review",\n  "requires_signature": true,\n  "flag": "treatment_discontinuation_request"\n}' },
+      { type: "escalation", label: "T+48u · escalatie", title: "Arts genotificeerd + nota in EPD geprepareerd", detail: "Behandelend arts dr. Janssens krijgt notificatie met volledig transcript en concept-nota. Patient krijgt bevestiging consultatie 2026-05-20 om 15:00." },
+      { type: "action", label: "T+48u · klaar voor arts review", title: "Case wacht op arts beslissing", detail: "Geen verdere AI actie tot na consultatie. Bij no-show consultatie: standaard recall workflow herstart. Bij bevestiging stoppen: arts initieert disengagement protocol (cohort registry flagging, contactpersoon huisarts)." }
+    ]
+  }
+};
+
+const colorMap = {
+  blue: { bg: "var(--blue-soft)", text: "var(--blue)" },
+  purple: { bg: "var(--purple-soft)", text: "var(--purple)" },
+  amber: { bg: "var(--amber-soft)", text: "var(--amber)" },
+  red: { bg: "var(--red-soft)", text: "var(--red)" }
+};
+
+let currentScenario = 'logistical';
+let running = false;
+let currentTimeouts = [];
+let auditLog = [];
+let caseIdCounter = 2826;
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('view-' + t.dataset.view).classList.add('active');
+  });
+});
+
+document.querySelectorAll('#scenario-pick button').forEach(b => {
+  b.addEventListener('click', () => {
+    if (running) return;
+    document.querySelectorAll('#scenario-pick button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentScenario = b.dataset.scenario;
+    resetUI();
+  });
+});
+
+document.getElementById('speed').addEventListener('input', (e) => {
+  document.getElementById('speed-out').textContent = (parseInt(e.target.value)/1000).toFixed(1) + 's';
+});
+
+document.getElementById('run-btn').addEventListener('click', () => {
+  if (running) return;
+  resetUI();
+  runScenario(currentScenario);
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  currentTimeouts.forEach(t => clearTimeout(t));
+  currentTimeouts = [];
+  running = false;
+  resetUI();
+  document.getElementById('agent-status').textContent = 'IDLE';
+  document.getElementById('dash-status').textContent = 'WACHT OP UPDATES';
+  document.getElementById('run-btn').disabled = false;
+});
+
+function resetUI() {
+  document.getElementById('agent-feed').innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg><div>Druk start om scenario af te spelen.</div></div>';
+  document.getElementById('attempts-list').innerHTML = '<div style="font-size: 12px; color: var(--ink-3); font-style: italic; padding: 10px 0;">Nog geen pogingen.</div>';
+  document.getElementById('attempts-count').textContent = '0';
+  document.getElementById('ai-summary-section').style.display = 'none';
+  document.getElementById('window-fill').style.width = '100%';
+  document.getElementById('window-fill').className = 'window-fill';
+  document.getElementById('window-text').textContent = '7 dagen open';
+  document.getElementById('patient-status').className = 'patient-status green';
+  document.getElementById('patient-status').textContent = 'IN WINDOW';
+  document.getElementById('overview-body').innerHTML = '<div class="empty">Run eerst een scenario op het demo tabblad.</div>';
+  document.getElementById('kpi-pogingen').textContent = '0';
+  document.getElementById('kpi-tijd').textContent = '0 min';
+  document.getElementById('kpi-bespaard').textContent = '0 min';
+  document.getElementById('kpi-outcome').textContent = '—';
+  document.getElementById('audit-body').innerHTML = '<div class="empty">Run eerst een scenario.</div>';
+  document.getElementById('audit-count').textContent = '0 events';
+  auditLog = [];
+}
+
+function parseTimeToHours(label) {
+  const m = label.match(/T\+(\d+)u/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function updateWindowFromLabel(label) {
+  const hours = parseTimeToHours(label);
+  const days = hours / 24;
+  const pct = Math.max(0, ((7 - days) / 7) * 100);
+  const fill = document.getElementById('window-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'window-fill' + (days > 5 ? ' danger' : days > 2 ? ' warn' : '');
+  document.getElementById('window-text').textContent = days >= 7 ? 'gesloten' : (7 - days).toFixed(1) + ' dagen open';
+  const status = document.getElementById('patient-status');
+  if (days > 5) { status.className = 'patient-status red'; status.textContent = 'WINDOW BIJNA TOE'; }
+  else if (days > 0) { status.className = 'patient-status amber'; status.textContent = 'NO-SHOW ACTIEF'; }
+}
+
+function addAttempt(when, what, channel, outcome, outcomeClass) {
+  const list = document.getElementById('attempts-list');
+  if (list.querySelector('div[style*="italic"]')) {
+    list.innerHTML = '';
+  }
+  const row = document.createElement('div');
+  row.className = 'attempt';
+  row.innerHTML = '<div class="when">' + when + '</div><div class="what">' + what + '<div class="channel">' + channel + '</div></div><div class="outcome ' + outcomeClass + '">' + outcome + '</div>';
+  list.appendChild(row);
+  document.getElementById('attempts-count').textContent = list.querySelectorAll('.attempt').length;
+}
+
+function showAISummary(scenario) {
+  const s = scenarios[scenario];
+  document.getElementById('ai-summary-section').style.display = 'block';
+  let html = '<div class="key">Samenvatting: ' + s.label + '</div>';
+  html += '<div style="margin-top: 8px;">' + s.summary + '</div>';
+  if (scenario === 'logistical') {
+    html += '<div style="margin-top: 10px; font-size: 12px; color: var(--ink-3);">VPK actie: geen. Case automatisch afgesloten. Eventueel review aanbevolen.</div>';
+  } else if (scenario === 'medical') {
+    html += '<div style="margin-top: 10px;"><strong>Symptomen gemeld:</strong> koorts ±1 week, lokale reactie injectieplaats (roodheid + zwelling).</div>';
+    html += '<div style="margin-top: 6px;"><strong>Differentiaal diagnose ter overweging:</strong> ernstige lokale reactie, cellulitis, intercurrente infectie.</div>';
+  } else if (scenario === 'noanswer') {
+    html += '<div style="margin-top: 10px;"><strong>Pogingen totaal:</strong> 4 (2 SMS + 2 voice) door agent, 2 (voice) door VPK, allen zonder respons.</div>';
+    html += '<div style="margin-top: 6px;"><strong>Klinische beslissing arts:</strong> orale overbruggingstherapie, care coordinator activeren.</div>';
+  } else if (scenario === 'stop') {
+    html += '<div style="margin-top: 10px;"><strong>Patient quote:</strong> "ik denk eigenlijk dat ik ermee wil stoppen"</div>';
+    html += '<div style="margin-top: 6px;"><strong>Reden:</strong> ervaren behandelbelasting. Geen acute distress.</div>';
+    html += '<div style="margin-top: 6px;"><strong>Consultatie gepland:</strong> 2026-05-20 om 15:00 met dr. Janssens.</div>';
+  }
+  document.getElementById('ai-summary').innerHTML = html;
+  const buttons = document.getElementById('action-buttons');
+  if (scenario === 'logistical') {
+    buttons.innerHTML = '<button class="primary" onclick="markCaseAsSeen()">Markeer als gezien</button><button onclick="openTranscript()">Bekijk transcript</button><button onclick="openEpdNote()">Bekijk nota voor dossier</button>';
+  } else if (scenario === 'medical') {
+    buttons.innerHTML = '<button class="primary" onclick="callPatient()">Patient bellen nu</button><button onclick="openTranscript()">Bekijk transcript</button><button onclick="planSameDay()">Plan zelfde-dag evaluatie</button><button onclick="openEpdNote()">Bekijk nota voor dossier</button>';
+  } else if (scenario === 'noanswer') {
+    buttons.innerHTML = '<button class="primary" onclick="callCareCoordinator()">Care coordinator bellen</button><button onclick="openPrescription()">Recept oral bridging</button><button onclick="requestHomeVisit()">Home visit aanvragen</button><button onclick="openEpdNote()">Bekijk nota voor dossier</button>';
+  } else if (scenario === 'stop') {
+    buttons.innerHTML = '<button class="primary" onclick="confirmConsultation()">Bevestig consultatie</button><button onclick="openTranscript()">Bekijk transcript</button><button onclick="openEpdNote()">Bekijk nota voor dossier</button>';
+  }
+}
+
+function renderEvent(ev) {
+  const div = document.createElement('div');
+  div.className = 'event ' + ev.type;
+  let body = '<div class="dot">';
+  if (ev.type === 'thinking') body += '◇';
+  else if (ev.type === 'tool') body += '⚙';
+  else if (ev.type === 'action') body += '→';
+  else if (ev.type === 'escalation') body += '⚠';
+  else if (ev.type === 'critical') body += '!';
+  body += '</div><div class="body"><div class="head"><span class="label">' + ev.label + '</span></div><div class="title">' + escapeHtml(ev.title) + '</div>';
+  if (ev.detail) body += '<div class="detail">' + escapeHtml(ev.detail) + '</div>';
+  if (ev.code) body += '<div class="code">' + escapeHtml(ev.code) + '</div>';
+  if (ev.transcript) {
+    body += '<div class="transcript">';
+    ev.transcript.forEach(line => {
+      body += '<div class="line' + (line.patient ? ' pat' : '') + '"><span class="who">' + line.who + ':</span> ' + escapeHtml(line.text) + '</div>';
+    });
+    body += '</div>';
+  }
+  body += '</div>';
+  div.innerHTML = body;
+  return div;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function fakeHash(seed) {
+  let h = 5381;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) + h + seed.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, '0');
+}
+
+function addToAuditLog(scenarioName, ev, idx) {
+  const base = new Date('2026-05-17T09:00:00Z').getTime();
+  const hours = parseTimeToHours(ev.label);
+  const ts = new Date(base + hours * 3600 * 1000 + idx * 1000).toISOString();
+  let actor = 'system';
+  let actorClass = 'system';
+  if (ev.type === 'thinking') { actor = 'agent.llm'; actorClass = ''; }
+  else if (ev.type === 'tool') { actor = 'agent.tool'; actorClass = 'system'; }
+  else if (ev.type === 'action') { actor = 'system.action'; actorClass = 'system'; }
+  else if (ev.type === 'escalation' || ev.type === 'critical') { actor = 'human.required'; actorClass = 'human'; }
+
+  const entry = {
+    ts,
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: idx + 1,
+    actor,
+    actor_class: actorClass,
+    event_type: ev.type,
+    action: ev.title,
+    payload_summary: (ev.detail || ev.code || '').substring(0, 80),
+    integrity_hash: fakeHash(ts + ev.title + idx)
+  };
+  if (idx > 0 && auditLog.length > 0) {
+    entry.prev_hash = auditLog[auditLog.length - 1].integrity_hash;
+  } else {
+    entry.prev_hash = '00000000';
+  }
+  auditLog.push(entry);
+}
+
+function renderAuditLog() {
+  const body = document.getElementById('audit-body');
+  if (auditLog.length === 0) {
+    body.innerHTML = '<div class="empty">Run eerst een scenario.</div>';
+    return;
+  }
+  let html = '<table class="audit-table"><thead><tr><th>Timestamp (UTC)</th><th>Seq</th><th>Actor</th><th>Event</th><th>Action</th><th>Prev hash</th><th>Hash</th></tr></thead><tbody>';
+  auditLog.forEach(e => {
+    html += '<tr>';
+    html += '<td class="ts">' + e.ts.replace('T', ' ').replace(/\.\d+Z$/, 'Z') + '</td>';
+    html += '<td>' + e.event_seq + '</td>';
+    html += '<td class="actor ' + e.actor_class + '">' + e.actor + '</td>';
+    html += '<td>' + e.event_type + '</td>';
+    html += '<td>' + escapeHtml(e.action) + '</td>';
+    html += '<td class="hash">' + e.prev_hash + '</td>';
+    html += '<td class="hash">' + e.integrity_hash + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  body.innerHTML = html;
+  document.getElementById('audit-count').textContent = auditLog.length + ' events';
+  document.getElementById('audit-case-id').textContent = caseIdCounter;
+}
+
+function runScenario(name) {
+  const s = scenarios[name];
+  if (!s) return;
+  running = true;
+  caseIdCounter++;
+  auditLog = [];
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('agent-status').textContent = 'RUNNING';
+  document.getElementById('dash-status').textContent = 'LIVE';
+  const feed = document.getElementById('agent-feed');
+  feed.innerHTML = '';
+  const speed = parseInt(document.getElementById('speed').value);
+  s.events.forEach((ev, i) => {
+    const t = setTimeout(() => {
+      feed.appendChild(renderEvent(ev));
+      feed.scrollTop = feed.scrollHeight;
+      updateWindowFromLabel(ev.label);
+      addToAuditLog(name, ev, i);
+      renderAuditLog();
+
+      if (ev.type === 'action' && ev.title.includes('SMS afgeleverd')) {
+        addAttempt(ev.label.split('·')[0].trim(), 'SMS herinnering', 'Geautomatiseerd · NL', 'GEEN REACTIE', 'no');
+      } else if (ev.title.includes('Tweede SMS')) {
+        addAttempt(ev.label.split('·')[0].trim(), 'SMS herinnering (urgentie)', 'Geautomatiseerd · NL', 'GEEN REACTIE', 'no');
+      } else if (ev.title.includes('Conversational AI start gesprek') && name === 'logistical') {
+        addAttempt(ev.label.split('·')[0].trim(), 'Voice call (gesprek 1:34)', 'Voice AI · NL', 'AFSPRAAK', 'ok');
+      } else if (ev.title.includes('Conversational AI start gesprek') && name === 'medical') {
+        addAttempt(ev.label.split('·')[0].trim(), 'Voice call (gesprek 0:48)', 'Voice AI · NL', 'ESCALATIE', 'warn');
+      } else if (ev.title.includes('Conversational AI start gesprek') && name === 'stop') {
+        addAttempt(ev.label.split('·')[0].trim(), 'Voice call (gesprek 1:12)', 'Voice AI · NL', 'ESCALATIE', 'warn');
+      } else if (ev.title.includes('voicemail ingesproken')) {
+        addAttempt(ev.label.split('·')[0].trim(), 'Voice call', 'Voice AI · NL', 'VOICEMAIL', 'no');
+      } else if (ev.title.includes('tweede belpoging')) {
+        addAttempt(ev.label.split('·')[0].trim(), 'Voice call (retry)', 'Voice AI · NL', 'NO ANSWER', 'no');
+      } else if (ev.title.includes('VPK belt')) {
+        addAttempt('T+120u', 'VPK belt persoonlijk', 'Verpleegkundige · NL', 'NO ANSWER', 'fail');
+      } else if (ev.title.includes('orale overbruggingstherapie')) {
+        addAttempt('T+144u', 'Orale overbrugging gestart', 'Arts beslissing', 'BRIDGING', 'fail');
+      }
+      if (i === s.events.length - 1) {
+        running = false;
+        document.getElementById('agent-status').textContent = 'COMPLETE';
+        document.getElementById('run-btn').disabled = false;
+        showAISummary(name);
+        renderOverview(name);
+      }
+    }, i * speed);
+    currentTimeouts.push(t);
+  });
+}
+
+function renderOverview(name) {
+  const s = scenarios[name];
+  document.getElementById('kpi-pogingen').textContent = document.querySelectorAll('#attempts-list .attempt').length;
+  document.getElementById('kpi-tijd').textContent = s.nurseTimeAfter + ' min';
+  document.getElementById('kpi-bespaard').textContent = (s.nurseTimeBefore - s.nurseTimeAfter) + ' min';
+  document.getElementById('kpi-outcome').textContent = s.outcome;
+
+  let html = '<div style="font-size: 14px; line-height: 1.7;">';
+  html += '<p><strong>Scenario:</strong> ' + s.label + '</p>';
+  html += '<p style="margin-top: 10px;"><strong>Wat gebeurde:</strong> ' + s.summary + '</p>';
+  html += '<p style="margin-top: 16px;"><strong>Tijdsbesteding verpleegkundige (geschat):</strong></p>';
+  html += '<ul style="margin: 8px 0 0 20px; color: var(--ink-2);">';
+  html += '<li>Zonder agent: ' + s.nurseTimeBefore + ' minuten (bellen, mailen, herinneren, documenteren)</li>';
+  html += '<li>Met agent: ' + s.nurseTimeAfter + ' minuten (alleen review van AI samenvatting)</li>';
+  html += '<li>Geschatte besparing per case: ' + (s.nurseTimeBefore - s.nurseTimeAfter) + ' minuten</li>';
+  html += '</ul>';
+  html += '<p style="margin-top: 20px; padding: 12px 16px; background: var(--bg); border-left: 3px solid var(--accent); font-size: 13px;">Bij 50 patiënten op long-acting HIV therapie en geschatte no-show rate van 10%, zijn dat ongeveer 5 cases per cyclus van 8 weken. Tijdsbesparing zou ' + ((s.nurseTimeBefore - s.nurseTimeAfter) * 5) + ' minuten per cyclus zijn voor enkel deze scenario type.</p>';
+  html += '<p style="margin-top: 20px; font-size: 12px; color: var(--ink-3);">Estimates zijn placeholder voor demo. Echte cijfers vereisen baseline meting bij ARC.</p>';
+  html += '</div>';
+  document.getElementById('overview-body').innerHTML = html;
+}
+
+function openModal(title, bodyHtml, footHtml) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-foot').innerHTML = footHtml || '<button onclick="closeModal()">Sluiten</button>';
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+function openTranscript() {
+  const s = scenarios[currentScenario];
+  const transcriptEvent = s.events.find(e => e.transcript);
+  if (!transcriptEvent) {
+    openModal('Transcript niet beschikbaar', '<p style="font-size: 14px; color: var(--ink-2);">Voor dit scenario was er geen voice gesprek met de patient.</p>');
+    return;
+  }
+  const base = new Date('2026-05-19T11:30:00');
+  const audioPath = 'audio/scenario_' + currentScenario + '.mp3';
+  let html = '<div class="transcript-full">';
+
+  html += '<div id="audio-player-wrap" style="background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;">';
+  html += '<div style="display: flex; align-items: center; gap: 12px;">';
+  html += '<div style="font-family: \'JetBrains Mono\', monospace; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; min-width: 90px;">Voice opname</div>';
+  html += '<audio id="scenario-audio" controls style="flex: 1; height: 36px;" preload="metadata">';
+  html += '<source src="' + audioPath + '" type="audio/mpeg">';
+  html += '</audio>';
+  html += '</div>';
+  html += '<div id="audio-missing" style="display: none; margin-top: 10px; padding: 10px 12px; background: var(--amber-soft); border: 1px solid var(--amber); border-radius: 5px; font-size: 12px; color: var(--amber);">';
+  html += 'Audio bestand <code style="font-family: \'JetBrains Mono\', monospace; background: white; padding: 1px 5px; border-radius: 3px;">' + audioPath + '</code> niet gevonden. Plaats de gegenereerde MP3 (ElevenLabs) in een <code style="font-family: \'JetBrains Mono\', monospace; background: white; padding: 1px 5px; border-radius: 3px;">audio/</code> map naast deze HTML.';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="meta">';
+  html += '<div>Case ID: REC-' + caseIdCounter + '</div>';
+  html += '<div>Gespreks duur: ' + s.transcriptDuration + '</div>';
+  html += '<div>Datum/tijd: 2026-05-19 11:30 CET</div>';
+  html += '<div>Voice agent versie: vox-agent-v2.4.1 / NL-BE</div>';
+  html += '<div>Speech-to-text: Whisper-large-v3 (lokaal)</div>';
+  html += '<div>Confidence score (transcript): 0.94 gemiddeld</div>';
+  html += '<div>Patient consent voice AI: gegeven 2026-01-12, geldig tot 2027-01-12</div>';
+  html += '</div>';
+  transcriptEvent.transcript.forEach((line, i) => {
+    const ts = new Date(base.getTime() + i * 7000);
+    const tsStr = ts.toTimeString().substring(0, 8);
+    html += '<div class="line' + (line.patient ? ' pat' : '') + '" data-line-idx="' + i + '">';
+    html += '<span class="ts">' + tsStr + '</span>';
+    html += '<span class="who">' + line.who + ':</span>';
+    html += escapeHtml(line.text);
+    html += '</div>';
+  });
+  html += '</div>';
+  openModal('Volledig transcript voice gesprek',
+    html,
+    '<button onclick="downloadTranscript()">Download als .txt</button><button onclick="closeModal()">Sluiten</button>'
+  );
+
+  setTimeout(() => {
+    const audio = document.getElementById('scenario-audio');
+    const missing = document.getElementById('audio-missing');
+    if (audio) {
+      audio.addEventListener('error', () => {
+        audio.style.display = 'none';
+        if (missing) missing.style.display = 'block';
+      });
+      audio.addEventListener('loadedmetadata', () => {
+        if (missing) missing.style.display = 'none';
+      });
+    }
+  }, 100);
+}
+
+function downloadTranscript() {
+  const s = scenarios[currentScenario];
+  const transcriptEvent = s.events.find(e => e.transcript);
+  if (!transcriptEvent) return;
+  let txt = 'TRANSCRIPT VOICE GESPREK\nCase ID: REC-' + caseIdCounter + '\nDuur: ' + s.transcriptDuration + '\n\n';
+  transcriptEvent.transcript.forEach(line => {
+    txt += line.who + ': ' + line.text + '\n';
+  });
+  downloadFile('transcript_REC-' + caseIdCounter + '.txt', txt);
+}
+
+function generateEpdNote(scenario) {
+  const today = new Date('2026-05-19').toLocaleDateString('nl-BE');
+  const head = 'NOTA VOOR DOSSIER — AUTOMATISCH OPGESTELD DOOR RECALL AGENT\n' +
+    'Datum: ' + today + '\n' +
+    'Patient: V., P. (geb. 1981, ♂)\n' +
+    'Case ID: REC-' + caseIdCounter + '\n' +
+    'Opsteller: ARC Recall Agent v0.2 (AI-drafted, vereist arts-validatie)\n' +
+    'Status: CONCEPT — ondertekening door VPK of arts nodig vooraleer definitief\n' +
+    '─────────────────────────────────────────────────────\n\n';
+
+  if (scenario === 'logistical') {
+    return head +
+'CONTEXT\n' +
+'Patient ingeschreven in long-acting HIV therapie programma sinds 2024-04. 14e injectie gepland\n' +
+'op 2026-05-17 09:00, niet uitgevoerd (no-show). Window sluit 2026-05-24.\n\n' +
+'CONTACT POGINGEN\n' +
+'• 2026-05-17 09:30: SMS herinnering (geen reactie)\n' +
+'• 2026-05-19 11:30: voice call door AI agent (gesprek 1:34, NL)\n\n' +
+'RELEVANTE INFORMATIE UIT GESPREK\n' +
+'• Patient geeft aan afspraak vergeten te zijn wegens buitenlandse opdracht.\n' +
+'• Patient bevestigt: geen koorts, geen bijwerkingen, geen nieuwe medicatie.\n' +
+'• Geen klinische signalen tijdens gesprek.\n\n' +
+'AGENT ACTIE\n' +
+'Nieuwe afspraak ingeboekt: 2026-05-22 11:30 (dag 5 in window, 2 dagen marge).\n' +
+'SMS bevestiging verstuurd. Calendar updated.\n\n' +
+'AANBEVELING\n' +
+'Geen verdere actie nodig. Bij uitblijven 2e no-show: standaard escalatie protocol\n' +
+'opnieuw activeren. Adherentie counseling overwegen indien dit patroon zich herhaalt.\n\n' +
+'TE VALIDEREN DOOR VPK / ARTS\n' +
+'☐ Inhoud nota klinisch correct\n' +
+'☐ Patient self-report bijwerkingen volstaat (geen aanvullend onderzoek nodig)\n' +
+'☐ Geen aanpassing therapieplan vereist';
+  } else if (scenario === 'medical') {
+    return head +
+'CONTEXT\n' +
+'Patient in long-acting HIV therapie programma. 14e injectie gepland 2026-05-17, niet uitgevoerd.\n' +
+'Tijdens AI voice opvolging op 2026-05-19 meldt patient symptomen.\n\n' +
+'KLINISCHE SIGNALEN GEMELD DOOR PATIENT (zelfgerapporteerd, niet gevalideerd)\n' +
+'• Koorts sinds ongeveer 1 week (geen temperatuur opgegeven)\n' +
+'• Roodheid en zwelling op locatie vorige injectie (gluteus)\n' +
+'• Patient gaf aan onzeker of hij moest komen wegens deze klachten\n\n' +
+'CONTACT POGINGEN\n' +
+'• 2026-05-17 09:30: SMS herinnering (geen reactie)\n' +
+'• 2026-05-19 11:30: voice call door AI agent (gesprek 0:48, NL, escalatie)\n\n' +
+'DIFFERENTIAAL DIAGNOSE TER OVERWEGING\n' +
+'• Ernstige lokale reactie op injectieplaats\n' +
+'• Cellulitis ter hoogte van injectieplaats\n' +
+'• Intercurrente infectie (los van injectie)\n' +
+'• Andere oorzaken van koorts (community-acquired)\n\n' +
+'AGENT ACTIE\n' +
+'Voice agent heeft scope onmiddellijk verlaten bij detectie klinische signalen.\n' +
+'Live transfer naar VPK Marleen op 2026-05-19 11:32. Behandelend arts dr. Janssens\n' +
+'gepaged met volledige context.\n\n' +
+'AANBEVELING (door VPK/arts te confirmeren)\n' +
+'• Zelfde-dag of volgende-dag evaluatie\n' +
+'• Klinisch onderzoek injectieplaats\n' +
+'• Bloedonderzoek: CRP, WBC, eventueel bloedkweek indien koorts >38.5°C\n' +
+'• Beslissing over injectie 14: uitstellen tot evaluatie afgerond\n' +
+'• Bij sepsis-verdenking: rechtstreekse spoed verwijzing\n\n' +
+'TE VALIDEREN DOOR VPK / ARTS\n' +
+'☐ Klinische beoordeling uitgevoerd\n' +
+'☐ Differentiaal diagnose getoetst aan bevindingen\n' +
+'☐ Therapeutisch plan bepaald';
+  } else if (scenario === 'noanswer') {
+    return head +
+'CONTEXT\n' +
+'Patient in long-acting HIV therapie programma. 14e injectie gepland 2026-05-17, niet uitgevoerd.\n' +
+'Geen contact mogelijk via SMS of voice over 6 dagen.\n\n' +
+'CONTACT POGINGEN (TOTAAL 6)\n' +
+'• 2026-05-17 09:30: SMS herinnering 1 — geen reactie\n' +
+'• 2026-05-18 09:30: SMS herinnering 2 (urgentie) — geen reactie\n' +
+'• 2026-05-19 11:30: voice call AI — voicemail ingesproken\n' +
+'• 2026-05-20 19:30: voice call AI retry (avond) — geen antwoord\n' +
+'• 2026-05-21: VPK Marleen belt 2x persoonlijk — geen antwoord\n\n' +
+'KLINISCHE BEOORDELING\n' +
+'Therapie interruptie >7 dagen verwacht. Risico op virologische rebound stijgt naarmate\n' +
+'plasma concentraties dalen onder beschermend niveau. Internationale richtlijnen\n' +
+'adviseren orale overbruggingstherapie bij missed injection window >7 dagen.\n\n' +
+'ARTS BESLISSING (dr. Janssens, 2026-05-23)\n' +
+'• Start orale overbruggingstherapie volgens standaard regime, voortgezet tot heropname langwerkende therapie\n' +
+'• Recept elektronisch verzonden naar apotheek patient\n' +
+'• Care coordinator gealarmeerd voor home visit + sociale evaluatie\n' +
+'• Cohort registry flag actief voor monitoring\n\n' +
+'VERVOLG\n' +
+'• Bij contact: dringend consult, bloedonderzoek (virologische status), evaluatie reden no-shows\n' +
+'• Bij geen contact binnen 14 dagen: huisarts contacteren, eventueel\n' +
+'  contactpersoon (na consent check)\n' +
+'• Bij langere stilte: case bespreken in multidisciplinair team\n\n' +
+'TE VALIDEREN DOOR VPK / ARTS\n' +
+'☐ Bridging recept correct opgesteld en verzonden\n' +
+'☐ Care coordinator effectief gecontacteerd\n' +
+'☐ Alle pogingen gedocumenteerd in audit trail';
+  } else if (scenario === 'stop') {
+    return head +
+'CONTEXT\n' +
+'Patient in long-acting HIV therapie programma sinds 2024-04. 14e injectie gepland 2026-05-17,\n' +
+'niet uitgevoerd. Tijdens AI voice opvolging uit patient expliciet de wens om\n' +
+'met behandeling te stoppen.\n\n' +
+'CONTACT POGINGEN\n' +
+'• 2026-05-17 09:30: SMS herinnering — geen reactie\n' +
+'• 2026-05-19 11:30: voice call AI agent (gesprek 1:12, NL, escalatie)\n\n' +
+'PATIENT VERKLARING (verbatim uit transcript)\n' +
+'"Ik denk eigenlijk dat ik ermee wil stoppen. Het voelt allemaal te belastend,\n' +
+'alle prikken, en ik weet niet of ik dat nog wil."\n\n' +
+'REDEN ZOALS GERAPPORTEERD\n' +
+'Ervaren behandelbelasting ("treatment burden"). Geen indicaties voor acute\n' +
+'distress of intoxicatie. Patient blijft cognitief helder en uit zelfstandig wens\n' +
+'tot gesprek vooraleer beslissing definitief.\n\n' +
+'AGENT GUARDRAILS TOEGEPAST\n' +
+'• Geen poging tot motiverend interview\n' +
+'• Geen klinisch advies\n' +
+'• Geen poging patient van mening te doen veranderen\n' +
+'• Direct escalatie naar arts met behoud patient autonomie\n\n' +
+'ACTIE\n' +
+'Consultatie gepland: 2026-05-20 om 15:00 met behandelend arts dr. Janssens.\n' +
+'Type: shared decision making. SMS bevestiging verzonden.\n\n' +
+'AANBEVELING VOOR CONSULTATIE\n' +
+'• Verken redenen treatment burden in detail (bijwerkingen, praktische factoren,\n' +
+'  psychosociale context, partner/familiale druk)\n' +
+'• Bespreek alternatieven: switch naar oral therapy als minder belastend ervaren,\n' +
+'  of pauze met monitoring vs definitief stoppen\n' +
+'• Informed consent voor disengagement traject indien patient bevestigt\n' +
+'• Bij stoppen: virologische monitoring, plan voor follow-up, huisarts informeren,\n' +
+'  cohort registry disengagement protocol\n' +
+'• Documenteer beslissing in EPD met handtekening patient\n\n' +
+'TE VALIDEREN DOOR VPK / ARTS\n' +
+'☐ Consultatie effectief plaatsgevonden\n' +
+'☐ Shared decision making gedocumenteerd\n' +
+'☐ Vervolg traject vastgelegd';
+  }
+  return head + 'Geen template beschikbaar voor dit scenario.';
+}
+
+function openEpdNote() {
+  const noteText = generateEpdNote(currentScenario);
+  const html = '<div class="epd-note">' + escapeHtml(noteText) + '</div>' +
+    '<div class="note-actions">' +
+    '<button onclick="copyEpdNote()">Kopieer naar clipboard</button>' +
+    '<button onclick="downloadEpdNote()">Download .txt</button>' +
+    '</div>';
+  openModal('Nota voor dossier (concept)', html,
+    '<button onclick="closeModal()">Sluiten</button><button class="primary" onclick="signEpdNote()">Onderteken & bewaar in EPD</button>'
+  );
+}
+
+function copyEpdNote() {
+  const txt = generateEpdNote(currentScenario);
+  navigator.clipboard.writeText(txt).then(() => {
+    alert('Nota gekopieerd naar clipboard.');
+  }).catch(() => {
+    alert('Kopiëren mislukt. Gebruik download in plaats.');
+  });
+}
+
+function downloadEpdNote() {
+  const txt = generateEpdNote(currentScenario);
+  downloadFile('nota_dossier_REC-' + caseIdCounter + '.txt', txt);
+}
+
+function signEpdNote() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'human_signoff',
+    action: 'EPD nota ondertekend en bewaard',
+    payload_summary: 'manual_signoff_by_authenticated_user',
+    integrity_hash: fakeHash(new Date().toISOString() + 'signoff'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  closeModal();
+  alert('Nota ondertekend en in EPD bewaard. Audit trail bijgewerkt.');
+}
+
+function markCaseAsSeen() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'human_review',
+    action: 'Case gemarkeerd als gezien door VPK',
+    payload_summary: 'no_further_action_required',
+    integrity_hash: fakeHash(new Date().toISOString() + 'seen'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  alert('Case afgesloten en gelogd. Audit trail bijgewerkt.');
+}
+
+function callPatient() {
+  openModal('Patient bellen',
+    '<p style="font-size: 14px; line-height: 1.7;">Bel patient meneer V. op <strong>+32 4XX XX XX XX</strong> voor klinische evaluatie van koorts en lokale reactie.</p>' +
+    '<p style="font-size: 13px; color: var(--ink-2); margin-top: 12px;">In productie zou deze knop direct het softphone systeem (bv. CISCO Jabber) lanceren met het juiste nummer voorgevuld.</p>' +
+    '<p style="font-size: 12px; color: var(--ink-3); margin-top: 16px;">Demo: klik bevestig om dit als VPK actie te loggen.</p>',
+    '<button onclick="closeModal()">Annuleer</button><button class="primary" onclick="confirmCall()">Bevestig: ik bel nu</button>'
+  );
+}
+
+function confirmCall() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'human_action',
+    action: 'VPK belt patient voor klinische evaluatie',
+    payload_summary: 'initiated_call_after_ai_escalation',
+    integrity_hash: fakeHash(new Date().toISOString() + 'call'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  closeModal();
+  alert('Actie gelogd in audit trail.');
+}
+
+function planSameDay() {
+  const today = new Date('2026-05-19');
+  const slots = ['14:30', '15:00', '15:30', '16:15', '17:00'];
+  let html = '<div class="appt-form">';
+  html += '<div class="field"><label>Patient</label><input type="text" value="V., P. (P-2847)" readonly></div>';
+  html += '<div class="field"><label>Type consultatie</label><select id="appt-type"><option>Klinische evaluatie lokale reactie + koorts</option><option>Klinisch onderzoek met bloedafname</option><option>Spoed consult dr. Janssens</option></select></div>';
+  html += '<div class="field"><label>Datum</label><input type="text" value="' + today.toLocaleDateString('nl-BE') + ' (vandaag)" readonly></div>';
+  html += '<div class="field"><label>Beschikbare slots</label><select id="appt-slot">';
+  slots.forEach(s => { html += '<option>' + s + ' — kabinet 4B</option>'; });
+  html += '</select></div>';
+  html += '<div class="field"><label>Notitie voor patient (in SMS bevestiging)</label><textarea rows="3">U bent vandaag verwacht in het ARC. Gelieve de injectieplaats niet aan te raken voor onderzoek. Brengt u een lijst mee van medicatie die u inneemt.</textarea></div>';
+  html += '</div>';
+  openModal('Zelfde-dag evaluatie plannen', html,
+    '<button onclick="closeModal()">Annuleer</button><button class="primary" onclick="confirmSameDay()">Plan & verstuur SMS</button>'
+  );
+}
+
+function confirmSameDay() {
+  const slot = document.getElementById('appt-slot').value;
+  const type = document.getElementById('appt-type').value;
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'appointment_booked',
+    action: 'Zelfde-dag evaluatie ingepland: ' + slot.substring(0, 5),
+    payload_summary: type + ' / ' + slot,
+    integrity_hash: fakeHash(new Date().toISOString() + 'sameday'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  closeModal();
+  alert('Afspraak ingepland: ' + slot.substring(0, 5) + '. SMS bevestiging verstuurd naar patient. Audit trail bijgewerkt.');
+}
+
+function callCareCoordinator() {
+  openModal('Care coordinator contacteren',
+    '<p style="font-size: 14px;">Doorbellen naar care coordinator team ARC voor home visit assessment van patient V.</p>' +
+    '<p style="font-size: 13px; color: var(--ink-2); margin-top: 12px;">Beschikbaar vandaag: <strong>Lieve D.</strong> (nr 1234) of <strong>Pieter M.</strong> (nr 1235).</p>' +
+    '<p style="font-size: 12px; color: var(--ink-3); margin-top: 16px;">In productie: één klik om paging te activeren met case context vooraf gedeeld.</p>',
+    '<button onclick="closeModal()">Annuleer</button><button class="primary" onclick="confirmCareCoordinator()">Page Lieve D.</button>'
+  );
+}
+
+function confirmCareCoordinator() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'escalation_human',
+    action: 'Care coordinator gecontacteerd voor home visit',
+    payload_summary: 'page_sent_to_care_coordinator_Lieve_D',
+    integrity_hash: fakeHash(new Date().toISOString() + 'cc'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  closeModal();
+  alert('Care coordinator gecontacteerd. Audit trail bijgewerkt.');
+}
+
+function openPrescription() {
+  openModal('Recept oral bridging',
+    '<div style="font-family: \'JetBrains Mono\', monospace; font-size: 13px; line-height: 1.7; padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px;">' +
+    '<div><strong>Voorschrijver:</strong> Dr. Janssens</div>' +
+    '<div><strong>Patient:</strong> V., P. (geb. 1981)</div>' +
+    '<div><strong>Datum:</strong> 2026-05-23</div>' +
+    '<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);">' +
+    '<div>R/ Orale overbruggingstherapie volgens standaard regime</div>' +
+    '<div>S/ Dagelijkse inname volgens voorschrift, oraal</div>' +
+    '<div>Aantal: voor 30 dagen</div>' +
+    '<div style="margin-top: 8px; font-size: 11px; color: var(--ink-3);">[Concrete molecule selectie door behandelend arts, conform actueel HIV behandelprotocol]</div>' +
+    '</div>' +
+    '<div style="margin-top: 12px; font-size: 11px; color: var(--ink-2);">Indicatie: orale overbrugging na missed long-acting injectie window. Voortzetten tot heropname langwerkende therapie na klinische evaluatie.</div>' +
+    '</div>',
+    '<button onclick="closeModal()">Sluiten</button>'
+  );
+}
+
+function requestHomeVisit() {
+  let html = '<div class="appt-form">';
+  html += '<div class="field"><label>Patient</label><input type="text" value="V., P. (P-2847)" readonly></div>';
+  html += '<div class="field"><label>Urgentie</label><select><option>Binnen 24 uur (preferred)</option><option>Binnen 48 uur</option><option>Binnen 1 week</option></select></div>';
+  html += '<div class="field"><label>Reden</label><textarea rows="3">Patient onbereikbaar via SMS/telefoon over 6 dagen, orale overbruggingstherapie gestart maar onbevestigd of medicatie opgehaald. Welzijnscheck + medicatie controle gevraagd.</textarea></div>';
+  html += '<div class="field"><label>Veiligheidsmelding</label><select><option>Geen risico bekend</option><option>Eerdere agressie incident (raadpleeg dossier)</option></select></div>';
+  html += '</div>';
+  openModal('Home visit aanvragen', html,
+    '<button onclick="closeModal()">Annuleer</button><button class="primary" onclick="confirmHomeVisit()">Verstuur aanvraag</button>'
+  );
+}
+
+function confirmHomeVisit() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'home_visit_requested',
+    action: 'Home visit aanvraag verzonden',
+    payload_summary: 'urgency_24h_for_welfare_check',
+    integrity_hash: fakeHash(new Date().toISOString() + 'hv'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  closeModal();
+  alert('Home visit aanvraag verzonden naar mobiel team. Audit trail bijgewerkt.');
+}
+
+function confirmConsultation() {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    case_id: 'REC-' + caseIdCounter,
+    event_seq: auditLog.length + 1,
+    actor: 'human.vpk',
+    actor_class: 'human',
+    event_type: 'consultation_confirmed',
+    action: 'Consultatie 2026-05-20 15:00 bevestigd',
+    payload_summary: 'shared_decision_making_consultation_with_physician',
+    integrity_hash: fakeHash(new Date().toISOString() + 'cons'),
+    prev_hash: auditLog.length > 0 ? auditLog[auditLog.length - 1].integrity_hash : '00000000'
+  };
+  auditLog.push(auditEntry);
+  renderAuditLog();
+  alert('Consultatie bevestigd in EPD agenda. Audit trail bijgewerkt.');
+}
+
+function downloadAuditLog() {
+  if (auditLog.length === 0) {
+    alert('Geen audit log beschikbaar. Run eerst een scenario.');
+    return;
+  }
+  const json = JSON.stringify({
+    case_id: 'REC-' + caseIdCounter,
+    exported_at: new Date().toISOString(),
+    exported_by: 'demo_user',
+    schema_version: '1.0',
+    integrity_chain: 'sha256_simulated',
+    total_events: auditLog.length,
+    events: auditLog
+  }, null, 2);
+  downloadFile('audit_REC-' + caseIdCounter + '.json', json);
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('speed-out').textContent = '0.9s';
+</script>
+</body>
+</html>
