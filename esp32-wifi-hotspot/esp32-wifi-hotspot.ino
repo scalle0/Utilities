@@ -46,16 +46,19 @@ static void onWiFiEvent(WiFiEvent_t event) {
   }
 }
 
-static void handleRoot() {
-  File f = LittleFS.open("/index.html", "r");
+static void streamFromFs(const char* path, const char* contentType) {
+  File f = LittleFS.open(path, "r");
   if (!f) {
     server.send(500, "text/plain",
-                "index.html missing from LittleFS. Upload the data/ folder.");
+                "File missing from LittleFS. Upload the data/ folder.");
     return;
   }
-  server.streamFile(f, "text/html");
+  server.streamFile(f, contentType);
   f.close();
 }
+
+static void handleRoot()   { streamFromFs("/index.html",  "text/html"); }
+static void handleGotcha() { streamFromFs("/gotcha.html", "text/html"); }
 
 static void handleStatus() {
   String json = "{";
@@ -110,7 +113,11 @@ void setup() {
   server.on("/ncsi.txt",                  handleCaptive);  // Windows
   server.on("/redirect",                  handleCaptive);  // Windows
   server.on("/",                          handleRoot);
+  server.on("/gotcha",                    handleGotcha);
   server.on("/status",                    handleStatus);
+  // Static assets used by the landing page.
+  server.serveStatic("/audio/", LittleFS, "/audio/");
+  server.serveStatic("/fonts/", LittleFS, "/fonts/");
   server.onNotFound(handleCaptive);
   server.begin();
 

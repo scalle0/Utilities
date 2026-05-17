@@ -1,13 +1,12 @@
-# ESP32 Public-WiFi Awareness Demo
+# ESP32 ScAIdev captive-portal demo
 
-Turns an ESP32 into an open WiFi access point named **`ScAIdev`** with a
-**captive portal** that auto-pops a tongue-in-cheek "gotcha" page the moment
-someone connects. The
-landing page explains what an attacker on a rogue hotspot *could* do and
-how to stay safer.
+Turns an Arduino Nano ESP32 into an open WiFi access point named
+**`ScAIdev`** with a captive portal that auto-pops a landing page the
+moment someone connects. The landing page is the **Recall Agent demo**
+(Dutch UI, with audio scenarios). The original public-WiFi awareness
+"gotcha" page is still on the device too, parked at `/gotcha`.
 
-No credentials are collected. No traffic is logged. The whole point is the
-landing page.
+No credentials are collected. No traffic is logged.
 
 ## How it works
 
@@ -19,9 +18,10 @@ landing page.
    `/connecttest.txt`, etc.) with a `302` redirect to `/`. This is what
    tells phones "you're behind a captive portal" — they then automatically
    pop the sign-in sheet showing your page.
-4. The landing page lives in `data/index.html` and is served from a
-   **LittleFS** partition on the ESP32 — you upload it once, separately
-   from the sketch, and you can edit it without recompiling.
+4. Everything the page needs — HTML, fonts (Fraunces, Inter Tight,
+   JetBrains Mono), and audio MP3s — lives in a **LittleFS** partition
+   on the ESP32 and is served from `/`, `/fonts/`, and `/audio/`. The
+   device works fully offline; no internet is required after flashing.
 
 ## Ethics & legality — read this
 
@@ -47,12 +47,30 @@ When in doubt: get explicit consent from the venue and audience.
 ```
 esp32-wifi-hotspot/
 ├── esp32-wifi-hotspot.ino   # the sketch (firmware)
-└── data/
-    └── index.html           # the landing page (uploaded to LittleFS)
+└── data/                    # everything in here is uploaded to LittleFS
+    ├── index.html           # Recall Agent demo (served at /)
+    ├── gotcha.html          # original awareness page (served at /gotcha)
+    ├── fonts/               # locally hosted WOFF2s (Fraunces, Inter Tight, JetBrains Mono)
+    │   └── *.woff2
+    └── audio/               # ElevenLabs scenario clips
+        └── scenario_*.mp3
 ```
 
-The `data/` folder is the convention used by the Arduino tooling — anything
-in there becomes the contents of the ESP32's LittleFS partition.
+Total `data/` payload is ~**3.6 MB**, mostly the four audio files. The
+Nano ESP32's default partition scheme allocates ~4 MB to LittleFS, so this
+fits with margin. If you add a lot more audio and the LittleFS upload
+fails with "No space left on device," switch *Tools → Partition Scheme*
+to one that gives the filesystem more room.
+
+## Endpoints
+
+- `GET /` — the Recall Agent demo (main landing page).
+- `GET /gotcha` — the original public-WiFi awareness page.
+- `GET /status` — JSON: SSID, IP, connected clients, lifetime visitor
+  count, uptime.
+- `GET /audio/scenario_*.mp3` — the scenario voice clips.
+- `GET /fonts/*.woff2` — the local copies of the Google Fonts.
+- Anything else — `302` to `/` (captive portal trick).
 
 ## Hardware
 
