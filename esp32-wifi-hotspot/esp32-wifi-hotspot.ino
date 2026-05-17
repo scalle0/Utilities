@@ -10,6 +10,19 @@
 #include <LittleFS.h>
 #include <Preferences.h>
 
+// Nano ESP32 RGB LED GPIOs. The Arduino-managed esp32 core defines these
+// as board macros automatically; the Espressif core (generic ESP32S3 Dev
+// Module) doesn't, so define them here as a fallback.
+#ifndef LED_RED
+#define LED_RED   46
+#endif
+#ifndef LED_GREEN
+#define LED_GREEN 0
+#endif
+#ifndef LED_BLUE
+#define LED_BLUE  45
+#endif
+
 const char* AP_SSID = "ScAIdev";
 
 const IPAddress AP_IP(192, 168, 4, 1);
