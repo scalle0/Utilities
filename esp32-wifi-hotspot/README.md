@@ -51,16 +51,22 @@ esp32-wifi-hotspot/
     ├── index.html           # Recall Agent demo (served at /)
     ├── gotcha.html          # original awareness page (served at /gotcha)
     ├── fonts/               # locally hosted WOFF2s (Fraunces, Inter Tight, JetBrains Mono)
-    │   └── *.woff2
-    └── audio/               # ElevenLabs scenario clips
-        └── scenario_*.mp3
+    │   ├── fraunces-{latin,latin-ext}.woff2
+    │   ├── intertight-{latin,latin-ext}.woff2
+    │   └── jetbrainsmono-{latin,latin-ext}.woff2
+    └── audio/               # ElevenLabs scenario clips, verified playing on-device
+        ├── scenario_logistical.mp3
+        ├── scenario_medical.mp3
+        ├── scenario_noanswer.mp3
+        └── scenario_stop.mp3
 ```
 
-Total `data/` payload is ~**3.6 MB**, mostly the four audio files. The
-Nano ESP32's default partition scheme allocates ~4 MB to LittleFS, so this
-fits with margin. If you add a lot more audio and the LittleFS upload
-fails with "No space left on device," switch *Tools → Partition Scheme*
-to one that gives the filesystem more room.
+Total `data/` payload is ~**3.6 MB** (mostly the four audio files). The
+Nano ESP32's default partition scheme allocates ~4 MB to LittleFS, so it
+fits with margin and is confirmed uploading/serving end-to-end. If you
+add a lot more audio and the LittleFS upload starts failing with "No
+space left on device," switch *Tools → Partition Scheme* to one that
+gives the filesystem more room.
 
 ## Endpoints
 
@@ -154,16 +160,12 @@ filesystem.
 
 ## Demo flow
 
-1. Show the audience the SSID list on their phones — point out yours.
-2. Have a volunteer connect to `ScAIdev`.
-3. Within a second or two their phone auto-opens the landing page. No
-   browser, no typing.
-4. Read it out loud, walk through the safety tips.
-5. Have the volunteer disconnect. Done.
-
-## Endpoints
-
-- `GET /` — the gotcha page.
-- `GET /status` — JSON with SSID, IP, connected client count, uptime
-  (handy for debugging from your laptop while running the demo).
-- Anything else — `302` to `/`.
+1. Show the audience the SSID list on their phones — point out `ScAIdev`.
+2. A volunteer connects.
+3. Within a second or two their phone auto-opens the Recall Agent demo —
+   no browser, no typing.
+4. Walk through the four scenarios (Logistiek / Medisch / Geen antwoord /
+   Wil stoppen); each plays its ElevenLabs voice clip from LittleFS.
+5. If you want to pivot to the public-WiFi awareness angle, point them
+   at `http://192.168.4.1/gotcha`.
+6. Volunteer disconnects. Done.
