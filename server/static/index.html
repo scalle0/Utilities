@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Uno Q Chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Uno Q Chat</h1>
+      <span id="status">connecting…</span>
+    </header>
+    <main id="log"></main>
+    <form id="form">
+      <textarea
+        id="input"
+        rows="2"
+        placeholder="Type a message…  (Enter to send, Shift+Enter for newline)"
+        required
+      ></textarea>
+      <button id="send" type="submit">Send</button>
+    </form>
+    <script src="app.js"></script>
+  </body>
+</html>
