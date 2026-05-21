@@ -93,13 +93,13 @@ async def bridge_health():
 async def bridge_call(request: Request):
     body = await request.json()
     method = body.get("method")
-    params = body.get("params") or {}
+    args = body.get("args", [])
     if not isinstance(method, str):
         raise HTTPException(status_code=400, detail="method required")
-    if not isinstance(params, dict):
-        raise HTTPException(status_code=400, detail="params must be object")
+    if not isinstance(args, list):
+        raise HTTPException(status_code=400, detail="args must be array")
     try:
-        result = await bridge.call(method, params)
+        result = await bridge.call(method, args)
     except BridgeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
     return {"result": result}
