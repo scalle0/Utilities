@@ -25,8 +25,8 @@ STATIC_DIR = Path(__file__).parent / "static"
 async def lifespan(app: FastAPI):
     try:
         await bridge.open()
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"[bridge] open failed: {exc!r}", flush=True)
     try:
         yield
     finally:
