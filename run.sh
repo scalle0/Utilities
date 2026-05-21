@@ -2,7 +2,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL="${UNO_CHAT_MODEL:-qwen2.5:3b}"
+MODEL="${UNO_CHAT_MODEL:-qwen2.5:1.5b}"
 PORT="${UNO_CHAT_PORT:-8080}"
 
 if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
