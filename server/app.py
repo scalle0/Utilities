@@ -1,11 +1,14 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+
+from bridge import BridgeError, bridge
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 DEFAULT_MODEL = os.environ.get("UNO_CHAT_MODEL", "qwen2.5:1.5b")
@@ -17,7 +20,20 @@ SYSTEM_PROMPT = os.environ.get(
 
 STATIC_DIR = Path(__file__).parent / "static"
 
-app = FastAPI(title="Uno Q Chat")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await bridge.open()
+    except Exception:
+        pass
+    try:
+        yield
+    finally:
+        await bridge.close()
+
+
+app = FastAPI(title="Uno Q Chat", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -66,6 +82,27 @@ async def chat(request: Request):
             yield f"data: {json.dumps({'error': str(exc)})}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+@app.get("/api/bridge/health")
+async def bridge_health():
+    return {"connected": bridge.connected, "port": bridge.port}
+
+
+@app.post("/api/bridge/call")
+async def bridge_call(request: Request):
+    body = await request.json()
+    method = body.get("method")
+    params = body.get("params") or {}
+    if not isinstance(method, str):
+        raise HTTPException(status_code=400, detail="method required")
+    if not isinstance(params, dict):
+        raise HTTPException(status_code=400, detail="params must be object")
+    try:
+        result = await bridge.call(method, params)
+    except BridgeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return {"result": result}
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
