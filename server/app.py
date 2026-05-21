@@ -69,6 +69,12 @@ async def chat(request: Request):
             )
         messages = [{"role": "system", "content": system}, *messages]
 
+    last_user = next(
+        (m.get("content", "") for m in reversed(messages) if m.get("role") == "user"),
+        "",
+    )
+    print(f"[chat] user: {last_user[:120]}", flush=True)
+
     async def stream():
         nonlocal messages
         try:
@@ -102,6 +108,11 @@ async def chat(request: Request):
                                 break
 
                     if not tool_calls:
+                        if assistant_content:
+                            print(
+                                f"[chat] assistant: {assistant_content[:200]}",
+                                flush=True,
+                            )
                         yield "data: [DONE]\n\n"
                         return
 
@@ -126,8 +137,10 @@ async def chat(request: Request):
                                 result if isinstance(result, str)
                                 else json.dumps(result)
                             )
+                            print(f"[tool] {name}({args}) = {result_str}", flush=True)
                         except BridgeError as exc:
                             result_str = json.dumps({"error": str(exc)})
+                            print(f"[tool] {name}({args}) ERROR {exc}", flush=True)
                         yield (
                             "data: "
                             + json.dumps({
