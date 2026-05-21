@@ -69,6 +69,17 @@ async function sendMessage(text) {
             bubble.textContent = assistantText;
             log.scrollTop = log.scrollHeight;
           }
+          if (obj.tool) {
+            const t = document.createElement("div");
+            t.style.cssText =
+              "font-family:monospace;font-size:0.85em;opacity:0.7;margin:4px 0";
+            const argsStr = JSON.stringify(obj.tool.args || {});
+            t.textContent = `→ ${obj.tool.name}(${argsStr}) = ${obj.tool.result}`;
+            log.insertBefore(t, bubble);
+            log.scrollTop = log.scrollHeight;
+            assistantText = "";
+            bubble.textContent = "…";
+          }
         } catch {
           // ignore malformed event
         }

@@ -9,6 +9,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from bridge import BridgeError, bridge
+from tools import TOOLS, dispatch as dispatch_tool
+
+MAX_TOOL_ROUNDS = 5
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 DEFAULT_MODEL = os.environ.get("UNO_CHAT_MODEL", "qwen2.5:1.5b")
@@ -51,33 +54,94 @@ async def health():
 @app.post("/api/chat")
 async def chat(request: Request):
     body = await request.json()
-    messages = body.get("messages", [])
+    messages = list(body.get("messages", []))
     model = body.get("model", DEFAULT_MODEL)
 
+    use_tools = bridge.connected
     if SYSTEM_PROMPT and not (messages and messages[0].get("role") == "system"):
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}, *messages]
-
-    payload = {"model": model, "messages": messages, "stream": True}
+        system = SYSTEM_PROMPT
+        if use_tools:
+            system += (
+                " You can control hardware on the STM32 microcontroller via the "
+                "provided tools (ping, gpio_mode, gpio_write, gpio_read). Use them "
+                "when the user asks to turn things on/off, blink a light, or read "
+                "an input. Configure pin mode before reading or writing."
+            )
+        messages = [{"role": "system", "content": system}, *messages]
 
     async def stream():
+        nonlocal messages
         try:
             async with httpx.AsyncClient(timeout=None) as client:
-                async with client.stream(
-                    "POST", f"{OLLAMA_URL}/api/chat", json=payload
-                ) as r:
-                    async for line in r.aiter_lines():
-                        if not line:
-                            continue
+                for _ in range(MAX_TOOL_ROUNDS + 1):
+                    payload = {"model": model, "messages": messages, "stream": True}
+                    if use_tools:
+                        payload["tools"] = TOOLS
+
+                    assistant_content = ""
+                    tool_calls: list = []
+
+                    async with client.stream(
+                        "POST", f"{OLLAMA_URL}/api/chat", json=payload
+                    ) as r:
+                        async for line in r.aiter_lines():
+                            if not line:
+                                continue
+                            try:
+                                obj = json.loads(line)
+                            except json.JSONDecodeError:
+                                continue
+                            msg = obj.get("message") or {}
+                            delta = msg.get("content", "")
+                            if delta:
+                                assistant_content += delta
+                                yield f"data: {json.dumps({'delta': delta})}\n\n"
+                            if msg.get("tool_calls"):
+                                tool_calls.extend(msg["tool_calls"])
+                            if obj.get("done"):
+                                break
+
+                    if not tool_calls:
+                        yield "data: [DONE]\n\n"
+                        return
+
+                    messages = messages + [{
+                        "role": "assistant",
+                        "content": assistant_content,
+                        "tool_calls": tool_calls,
+                    }]
+
+                    for tc in tool_calls:
+                        fn = tc.get("function") or {}
+                        name = fn.get("name", "")
+                        args = fn.get("arguments") or {}
+                        if isinstance(args, str):
+                            try:
+                                args = json.loads(args)
+                            except json.JSONDecodeError:
+                                args = {}
                         try:
-                            obj = json.loads(line)
-                        except json.JSONDecodeError:
-                            continue
-                        delta = obj.get("message", {}).get("content", "")
-                        if delta:
-                            yield f"data: {json.dumps({'delta': delta})}\n\n"
-                        if obj.get("done"):
-                            yield "data: [DONE]\n\n"
-                            return
+                            result = await dispatch_tool(name, args)
+                            result_str = (
+                                result if isinstance(result, str)
+                                else json.dumps(result)
+                            )
+                        except BridgeError as exc:
+                            result_str = json.dumps({"error": str(exc)})
+                        yield (
+                            "data: "
+                            + json.dumps({
+                                "tool": {"name": name, "args": args, "result": result_str}
+                            })
+                            + "\n\n"
+                        )
+                        messages = messages + [{
+                            "role": "tool",
+                            "name": name,
+                            "content": result_str,
+                        }]
+
+                yield "data: [DONE]\n\n"
         except httpx.HTTPError as exc:
             yield f"data: {json.dumps({'error': str(exc)})}\n\n"
 
