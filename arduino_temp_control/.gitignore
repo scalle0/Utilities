@@ -1,0 +1,28 @@
+# Arduino IoT Cloud Credentials
+# IMPORTANT: Never commit your credentials!
+thingProperties.h
+
+# Backup of credentials file
+thingProperties.h.backup
+*.credentials
+
+# Arduino build files
+*.elf
+*.hex
+*.bin
+*.map
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal configuration
+config.h
+secrets.h
